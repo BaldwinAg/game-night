@@ -293,7 +293,7 @@
           winning: "First player to reach 200 points wins! If multiple players pass 200 in the same round, highest score wins."
         }
       },
-      yahtzee: { name: 'Yahtzee', icon: '🎲', color: 'red', targetScore: null, highestWins: true, description: '13 categories, highest wins', minPlayers: 1, maxPlayers: 6, hasTabs: true, tabLabels: { scorecard: 'ðŸ“ Scorecard', reference: 'ðŸ“Š Reference' },
+      yahtzee: { name: 'Yahtzee', icon: '🎲', color: 'red', targetScore: null, highestWins: true, description: '13 categories, highest wins', minPlayers: 1, maxPlayers: 6, hasTabs: true, tabLabels: { scorecard: '📝 Scorecard', reference: '📊 Reference' },
         rules: {
           overview: "Roll 5 dice up to 3 times per turn to make the best scoring combination. Fill all 13 categories on your scorecard.",
           setup: "Each player gets a scorecard. Decide who goes first.",
@@ -323,7 +323,7 @@
           winning: "After all 13 categories are filled, add up your total. Highest score wins!"
         }
       },
-      phase10: { name: 'Phase 10', icon: '🔟', color: 'blue', targetScore: null, highestWins: false, description: 'Complete 10 phases first', minPlayers: 2, maxPlayers: 6, hasTabs: true, tabLabels: { scorecard: 'ðŸ“ Score', reference: 'ðŸ“‹ Phases' },
+      phase10: { name: 'Phase 10', icon: '🔟', color: 'blue', targetScore: null, highestWins: false, description: 'Complete 10 phases first', minPlayers: 2, maxPlayers: 6, hasTabs: true, tabLabels: { scorecard: '📝 Score', reference: '📋 Phases' },
         rules: {
           overview: "Race to complete 10 phases in order. Each phase requires a specific combination of cards. Cards left in your hand count as penalty points!",
           setup: "Deal 10 cards to each player. Place remaining cards face down as draw pile. Flip one card to start the discard pile.",
@@ -350,7 +350,7 @@
           winning: "First player to complete Phase 10 wins! If tied, lowest total penalty points breaks the tie."
         }
       },
-      farkle: { name: 'Farkle', icon: '🎯', color: 'purple', targetScore: 10000, highestWins: true, description: 'First to 10,000 wins', minPlayers: 2, maxPlayers: 8, hasTabs: true, tabLabels: { scorecard: 'ðŸ“ Scorecard', reference: 'ðŸŽ² Scoring' },
+      farkle: { name: 'Farkle', icon: '🎯', color: 'purple', targetScore: 10000, highestWins: true, description: 'First to 10,000 wins', minPlayers: 2, maxPlayers: 8, hasTabs: true, tabLabels: { scorecard: '📝 Scorecard', reference: '🎲 Scoring' },
         rules: {
           overview: "Roll 6 dice and set aside scoring combinations. Push your luck to build points, but FARKLE (no scoring dice) and lose it all!",
           setup: "Need 6 dice. Decide who goes first. Some versions require 500+ to 'get on the board' before banking.",
@@ -389,7 +389,7 @@
           winning: "First player to reach 10,000 points wins! Final round: others get one more turn to beat the leader."
         }
       },
-      ginRummy: { name: 'Gin Rummy', icon: 'â™ ï¸', color: 'amber', targetScore: 100, highestWins: true, description: 'First to 100 wins', minPlayers: 2, maxPlayers: 4, hasTabs: false,
+      ginRummy: { name: 'Gin Rummy', icon: '🃏', color: 'amber', targetScore: 100, highestWins: true, description: 'First to 100 wins', minPlayers: 2, maxPlayers: 4, hasTabs: false,
         rules: {
           overview: "Form melds (sets and runs) with your cards. Knock when your unmatched cards (deadwood) total 10 or less, or go GIN with no deadwood!",
           setup: "Deal 10 cards each. Place remaining cards face down as stock. Flip one card to start discard pile.",
@@ -419,7 +419,7 @@
           winning: "First player to reach 100 points wins the match!"
         }
       },
-      cribbage: { name: 'Cribbage', icon: '🛤️', color: 'emerald', targetScore: 121, highestWins: true, description: 'First to 121 wins', minPlayers: 2, maxPlayers: 2, hasTabs: true, tabLabels: { scorecard: 'ðŸ›¤ï¸ Board', reference: 'ðŸ“– Scoring' },
+      cribbage: { name: 'Cribbage', icon: '🛤️', color: 'emerald', targetScore: 121, highestWins: true, description: 'First to 121 wins', minPlayers: 2, maxPlayers: 2, hasTabs: true, tabLabels: { scorecard: '🛤️ Board', reference: '📖 Scoring' },
         rules: {
           overview: "A classic 2-player card game combining luck and strategy. Score points during play (pegging) and by making combinations in your hand. First to 121 wins!",
           setup: "Deal 6 cards each. Each player discards 2 cards face-down to the 'crib' (dealer's bonus hand). Cut deck to reveal 'starter' card.",
@@ -457,7 +457,7 @@
           winning: "First to 121 wins! If winner hits 121 before loser reaches 91, it's a 'skunk' (double win)!"
         }
       },
-      pitch: { name: 'Pitch', icon: '♠️', color: 'purple', targetScore: 52, highestWins: true, description: '10-point or 13-point', minPlayers: 4, maxPlayers: 6, hasTabs: true, tabLabels: { scorecard: 'ðŸ“ Score', reference: 'ðŸ“– Points' },
+      pitch: { name: 'Pitch', icon: '♠️', color: 'purple', targetScore: 52, highestWins: true, description: '10-point or 13-point', minPlayers: 4, maxPlayers: 6, hasTabs: true, tabLabels: { scorecard: '📝 Score', reference: '📖 Points' },
         rules: {
           overview: "A trick-taking game where you bid on how many points you can take. Only trump cards are played. The bidder (pitcher) sets trump and tries to make their bid.",
           setup: "Deal 9 cards each (10-pt/13-pt). After bidding, discard non-trump and redraw to 6 cards. Pitcher gets remaining cards.",
@@ -1168,7 +1168,7 @@
             <div className="container">
               <button onClick={() => setShowLeaderboard(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>â† Back</button>
               <div className="text-center mb-6">
-                <span className="text-5xl mb-2">ðŸ†</span>
+                <span className="text-5xl mb-2">🏆</span>
                 <h1 className="text-3xl font-bold text-white">Wins Leaderboard</h1>
                 <p className="text-light text-sm mt-1">Family bragging rights</p>
               </div>
@@ -1184,7 +1184,7 @@
                     <div key={player.name} className={`standing-item ${i === 0 ? 'leader' : ''}`} style={{marginBottom: '12px'}}>
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <span className={`rank ${i === 0 ? 'leader' : ''}`} style={{fontSize: '24px'}}>{i === 0 ? 'ðŸ‘‘' : i + 1}</span>
+                          <span className={`rank ${i === 0 ? "leader" : ""}`} style={{fontSize: "24px"}}>{i === 0 ? "🥇" : i + 1}</span>
                           <span className="text-white font-bold text-lg">{player.name}</span>
                         </div>
                         <span className="text-white text-2xl font-bold">{player.total}</span>
