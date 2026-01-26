@@ -2,6 +2,26 @@
 
 All notable changes to Game Night Scorekeeper will be documented in this file.
 
+## [5.1.1] - 2025-01-26
+
+### Fixed
+- **Emoji Encoding**: Fixed all corrupted emoji characters throughout the app
+- **Game Icons**: All game icons now display correctly (🃏🎲🔟🎯♠️🛤️)
+- **Service Worker**: Updated to handle optional firebase-config.js gracefully
+- **Cache Install Error**: Fixed "Failed to execute 'addAll' on 'Cache'" error
+- **File Names**: Removed spaces and numbers from icon and manifest filenames
+
+### Added
+- **DEPLOYMENT.md**: Comprehensive deployment guide for Hostinger, Firebase, GitHub Pages
+- **Firebase Setup Instructions**: Step-by-step authorized domains configuration
+- **Troubleshooting Guide**: Common deployment issues and solutions
+
+### Changed
+- Service worker now caches required files first, optional files second
+- firebase-config.js is now optional (won't break app if missing)
+
+---
+
 ## [5.1.0] - 2025-01-26
 
 ### Added
