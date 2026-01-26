@@ -117,7 +117,7 @@ firestore/
 - [x] Set up Firebase configuration structure
 - [x] Create Firebase setup guide
 
-### Phase 2: Authentication (v5.1.0) ✅ Current
+### Phase 2: Authentication (v5.1.0) ✅ Complete
 - [x] Add Firebase SDK to app
 - [x] Implement Google Sign-In
 - [x] Create user profile in Firestore on first login
@@ -125,15 +125,15 @@ firestore/
 - [x] Show user avatar when signed in
 - [x] Maintain local-only mode for non-signed-in users
 
-### Phase 3: Groups (v5.2.0)
-- [ ] Create group management UI
-- [ ] Implement "Create Group" flow
-- [ ] Generate unique invite codes
-- [ ] Implement "Join Group" with invite code
-- [ ] Group switching in header
-- [ ] List group members
-- [ ] Leave group functionality
-- [ ] Group owner can remove members
+### Phase 3: Groups (v5.2.0) ✅ Current
+- [x] Create group management UI
+- [x] Implement "Create Group" flow
+- [x] Generate unique invite codes
+- [x] Implement "Join Group" with invite code
+- [x] Group switching in header
+- [x] List group members
+- [x] Leave group functionality
+- [x] Group owner can remove members
 
 ### Phase 4: Match Recording (v5.3.0)
 - [ ] Modify game completion flow
@@ -280,7 +280,7 @@ firestore/
 | 4.11 | Pre-Firebase production (local only) | ✅ Released |
 | 5.0.0 | Foundation + roadmap | ✅ Released |
 | 5.1.0 | Authentication | ✅ Released |
-| 5.2.0 | Groups | 📋 Planned |
+| 5.2.0 | Groups | ✅ Released |
 | 5.3.0 | Match Recording | 📋 Planned |
 | 5.4.0 | Synced Leaderboards | 📋 Planned |
 | 5.5.0 | Match History | 📋 Planned |

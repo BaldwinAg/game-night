@@ -2,6 +2,42 @@
 
 All notable changes to Game Night Scorekeeper will be documented in this file.
 
+## [5.2.0] - 2025-01-26
+
+### Added - Player Groups (Phase 3 Complete)
+- **Create Groups**: Create game night groups with unique 6-character invite codes
+- **Join Groups**: Join groups using invite codes
+- **Group Management**: Full group management interface accessible from home screen
+- **Member Management**: View all group members with avatars and display names
+- **Group Switching**: Select active group from dropdown on home screen
+- **Owner Controls**: Group owners can remove members
+- **Leave Group**: Members can leave groups at any time
+- **Ownership Transfer**: Automatic ownership transfer when owner leaves
+- **Group Deletion**: Automatic deletion when last member leaves
+- **Real-Time Sync**: Group membership changes sync instantly across all devices
+- **Invite Code Sharing**: Copy invite codes to clipboard with one tap
+- **Member Limit**: Support up to 20 members per group
+- **Multi-Group Support**: Users can be members of multiple groups simultaneously
+
+### Technical
+- Firestore `groups` collection with denormalized member data
+- Client-side filtering for group membership queries
+- localStorage persistence for selected group across sessions
+- Responsive group management UI following existing design patterns
+- Conditional rendering: groups only visible when signed in
+- Full backward compatibility: app works identically for non-signed-in users
+
+### Changed
+- Updated app version to 5.2.0
+- Sign-in prompt now mentions "player groups" feature
+- Service worker cache should be updated to v18
+
+### Foundation for Phase 4
+- Group context ready for match recording (v5.3.0)
+- Member structure supports points-based leaderboards
+
+---
+
 ## [5.1.1] - 2025-01-26
 
 ### Fixed

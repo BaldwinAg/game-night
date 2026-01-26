@@ -195,6 +195,59 @@
       .container { max-width: 960px; }
       .game-cards-grid { grid-template-columns: repeat(3, 1fr); }
     }
+
+    /* Group Management Styles */
+    .group-selector {
+      font-size: 14px;
+      padding: 8px 12px;
+      margin-bottom: 16px;
+    }
+
+    .group-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+
+    .member-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      object-fit: cover;
+    }
+
+    .invite-code {
+      font-family: monospace;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      padding: 12px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      text-align: center;
+      user-select: all;
+    }
+
+    .member-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .member-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -207,9 +260,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 5.1.0 - Google Authentication
+    // Version 5.2.0 - Player Groups
     // ============================================
-    const APP_VERSION = '5.1.0';
+    const APP_VERSION = '5.2.0';
     
     // Firebase initialization (if configured)
     let firebaseApp = null;
@@ -268,6 +321,28 @@
         localStorage.setItem('gameNightPlayers', JSON.stringify(players));
       } catch (e) {
         console.log('Could not save players');
+      }
+    };
+
+    // Load selected group from localStorage
+    const loadSelectedGroup = () => {
+      try {
+        return localStorage.getItem('selectedGroupId');
+      } catch (e) {
+        return null;
+      }
+    };
+
+    // Save selected group to localStorage
+    const saveSelectedGroup = (groupId) => {
+      try {
+        if (groupId) {
+          localStorage.setItem('selectedGroupId', groupId);
+        } else {
+          localStorage.removeItem('selectedGroupId');
+        }
+      } catch (e) {
+        console.log('[Groups] Could not save selected group');
       }
     };
 
@@ -568,6 +643,16 @@
       const [currentUser, setCurrentUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
 
+      // Group Management state
+      const [showGroupManager, setShowGroupManager] = useState(false);
+      const [currentGroups, setCurrentGroups] = useState([]);
+      const [selectedGroupId, setSelectedGroupId] = useState(null);
+      const [activeGroupData, setActiveGroupData] = useState(null);
+      const [groupMembers, setGroupMembers] = useState([]);
+      const [createGroupName, setCreateGroupName] = useState('');
+      const [joinGroupCode, setJoinGroupCode] = useState('');
+      const [groupLoading, setGroupLoading] = useState(false);
+
       // Firebase Auth Observer - Listen for auth state changes
       useEffect(() => {
         if (!firebaseAuth) {
@@ -641,6 +726,59 @@
           setWinRecorded(false);
         }
       }, [screen]);
+
+      // Load selected group from localStorage
+      useEffect(() => {
+        const savedGroupId = loadSelectedGroup();
+        if (savedGroupId && firebaseConfigured && currentUser) {
+          setSelectedGroupId(savedGroupId);
+        }
+      }, [currentUser]);
+
+      // Listen to user's groups (real-time updates)
+      useEffect(() => {
+        if (!firebaseDb || !currentUser) {
+          setCurrentGroups([]);
+          return;
+        }
+
+        // Query all groups where the user is a member
+        // Note: We can't use array-contains with object, so we query all groups
+        // and filter on client side, or use a memberIds array field
+        const unsubscribe = firebaseDb.collection('groups')
+          .onSnapshot(snapshot => {
+            const allGroups = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+
+            // Filter to groups where current user is a member
+            const userGroups = allGroups.filter(group =>
+              group.members && group.members.some(m => m.userId === currentUser.uid)
+            );
+
+            setCurrentGroups(userGroups);
+
+            // Update active group data if it changed
+            if (selectedGroupId) {
+              const activeGroup = userGroups.find(g => g.id === selectedGroupId);
+              if (activeGroup) {
+                setActiveGroupData(activeGroup);
+                setGroupMembers(activeGroup.members || []);
+              } else {
+                // Group was deleted or user was removed
+                setSelectedGroupId(null);
+                saveSelectedGroup(null);
+                setActiveGroupData(null);
+                setGroupMembers([]);
+              }
+            }
+          }, error => {
+            console.error('[Groups] Listener error:', error);
+          });
+
+        return () => unsubscribe();
+      }, [currentUser, selectedGroupId]);
 
       // Record a win (for manual use if needed)
       const recordWin = (playerName, gameKey) => {
@@ -773,6 +911,254 @@
         } catch (error) {
           console.error('[Auth] Sign-out error:', error);
           alert('Sign-out failed: ' + error.message);
+        }
+      };
+
+      // Group Management functions
+      const generateInviteCode = async () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let attempts = 0;
+
+        while (attempts < 10) {
+          let code = '';
+          for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+
+          // Check uniqueness
+          const existing = await firebaseDb.collection('groups')
+            .where('inviteCode', '==', code)
+            .limit(1)
+            .get();
+
+          if (existing.empty) return code;
+          attempts++;
+        }
+
+        throw new Error('Failed to generate unique invite code');
+      };
+
+      const handleCreateGroup = async () => {
+        if (!firebaseDb || !currentUser) return;
+
+        const name = createGroupName.trim();
+        if (name.length < 3 || name.length > 30) {
+          alert('Group name must be 3-30 characters');
+          return;
+        }
+
+        setGroupLoading(true);
+
+        try {
+          const inviteCode = await generateInviteCode();
+          const groupData = {
+            name: name,
+            ownerId: currentUser.uid,
+            inviteCode: inviteCode,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            memberCount: 1,
+            members: [{
+              userId: currentUser.uid,
+              displayName: currentUser.displayName || 'Anonymous',
+              photoURL: currentUser.photoURL || '',
+              joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }]
+          };
+
+          const groupRef = await firebaseDb.collection('groups').add(groupData);
+
+          // Set as active group
+          setSelectedGroupId(groupRef.id);
+          saveSelectedGroup(groupRef.id);
+
+          // Clear form
+          setCreateGroupName('');
+
+          console.log('[Groups] Created group:', groupRef.id);
+        } catch (error) {
+          console.error('[Groups] Create error:', error);
+          alert('Failed to create group: ' + error.message);
+        } finally {
+          setGroupLoading(false);
+        }
+      };
+
+      const handleJoinGroup = async () => {
+        if (!firebaseDb || !currentUser) return;
+
+        const code = joinGroupCode.trim().toUpperCase();
+        if (code.length !== 6) {
+          alert('Invite code must be 6 characters');
+          return;
+        }
+
+        setGroupLoading(true);
+
+        try {
+          // Find group by invite code
+          const groupsSnapshot = await firebaseDb.collection('groups')
+            .where('inviteCode', '==', code)
+            .limit(1)
+            .get();
+
+          if (groupsSnapshot.empty) {
+            alert('Invalid invite code');
+            return;
+          }
+
+          const groupDoc = groupsSnapshot.docs[0];
+          const groupData = groupDoc.data();
+
+          // Check if already a member
+          const isMember = groupData.members.some(m => m.userId === currentUser.uid);
+          if (isMember) {
+            alert('You are already a member of this group');
+            setSelectedGroupId(groupDoc.id);
+            saveSelectedGroup(groupDoc.id);
+            setJoinGroupCode('');
+            return;
+          }
+
+          // Check member limit
+          if (groupData.memberCount >= 20) {
+            alert('Group is full (max 20 members)');
+            return;
+          }
+
+          // Add member
+          await firebaseDb.collection('groups').doc(groupDoc.id).update({
+            members: firebase.firestore.FieldValue.arrayUnion({
+              userId: currentUser.uid,
+              displayName: currentUser.displayName || 'Anonymous',
+              photoURL: currentUser.photoURL || '',
+              joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }),
+            memberCount: firebase.firestore.FieldValue.increment(1)
+          });
+
+          // Set as active group
+          setSelectedGroupId(groupDoc.id);
+          saveSelectedGroup(groupDoc.id);
+          setJoinGroupCode('');
+
+          console.log('[Groups] Joined group:', groupDoc.id);
+        } catch (error) {
+          console.error('[Groups] Join error:', error);
+          alert('Failed to join group: ' + error.message);
+        } finally {
+          setGroupLoading(false);
+        }
+      };
+
+      const switchToGroup = (groupId) => {
+        if (!groupId) {
+          setSelectedGroupId(null);
+          saveSelectedGroup(null);
+          setActiveGroupData(null);
+          setGroupMembers([]);
+          return;
+        }
+
+        setSelectedGroupId(groupId);
+        saveSelectedGroup(groupId);
+
+        const groupData = currentGroups.find(g => g.id === groupId);
+        if (groupData) {
+          setActiveGroupData(groupData);
+          setGroupMembers(groupData.members || []);
+        }
+      };
+
+      const handleLeaveGroup = async () => {
+        if (!activeGroupData || !currentUser) return;
+
+        if (!confirm(`Leave "${activeGroupData.name}"?`)) return;
+
+        setGroupLoading(true);
+
+        try {
+          const groupRef = firebaseDb.collection('groups').doc(activeGroupData.id);
+          const isOwner = activeGroupData.ownerId === currentUser.uid;
+
+          // Remove self from members
+          const updatedMembers = activeGroupData.members.filter(
+            m => m.userId !== currentUser.uid
+          );
+
+          if (updatedMembers.length === 0) {
+            // Last member - delete group
+            await groupRef.delete();
+            console.log('[Groups] Deleted empty group');
+          } else if (isOwner) {
+            // Transfer ownership to oldest member
+            await groupRef.update({
+              members: updatedMembers,
+              memberCount: updatedMembers.length,
+              ownerId: updatedMembers[0].userId
+            });
+            console.log('[Groups] Transferred ownership');
+          } else {
+            // Regular member leaving
+            await groupRef.update({
+              members: updatedMembers,
+              memberCount: updatedMembers.length
+            });
+          }
+
+          // Clear local selection
+          setSelectedGroupId(null);
+          saveSelectedGroup(null);
+          setActiveGroupData(null);
+          setGroupMembers([]);
+          setShowGroupManager(false);
+
+        } catch (error) {
+          console.error('[Groups] Leave error:', error);
+          alert('Failed to leave group: ' + error.message);
+        } finally {
+          setGroupLoading(false);
+        }
+      };
+
+      const handleRemoveMember = async (userId) => {
+        if (!activeGroupData || !currentUser) return;
+        if (activeGroupData.ownerId !== currentUser.uid) {
+          alert('Only the group owner can remove members');
+          return;
+        }
+
+        const member = activeGroupData.members.find(m => m.userId === userId);
+        if (!confirm(`Remove ${member.displayName} from group?`)) return;
+
+        setGroupLoading(true);
+
+        try {
+          const updatedMembers = activeGroupData.members.filter(
+            m => m.userId !== userId
+          );
+
+          await firebaseDb.collection('groups').doc(activeGroupData.id).update({
+            members: updatedMembers,
+            memberCount: updatedMembers.length
+          });
+
+          console.log('[Groups] Removed member');
+        } catch (error) {
+          console.error('[Groups] Remove error:', error);
+          alert('Failed to remove member: ' + error.message);
+        } finally {
+          setGroupLoading(false);
+        }
+      };
+
+      const copyToClipboard = (text) => {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text)
+            .then(() => alert('Copied to clipboard!'))
+            .catch(() => alert('Failed to copy'));
+        } else {
+          // Fallback for older browsers
+          alert(`Invite Code: ${text}`);
         }
       };
 
@@ -1157,6 +1543,141 @@
       );
 
       if (showRules && game) return <RulesScreen />;
+
+      // GROUP MANAGER SCREEN
+      const GroupManagerModal = () => (
+        <div className="app bg-slate" style={{paddingBottom: '24px'}}>
+          <div className="container">
+            <button onClick={() => setShowGroupManager(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
+
+            <div className="text-center mb-6">
+              <span className="text-5xl mb-2">👥</span>
+              <h1 className="text-3xl font-bold text-white">Manage Groups</h1>
+              <p className="text-light text-sm mt-1">Create and join game night groups</p>
+            </div>
+
+            {/* Active Group Section */}
+            {activeGroupData && (
+              <div className="card mb-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-white font-semibold text-lg">{activeGroupData.name}</h2>
+                  {activeGroupData.ownerId === currentUser.uid && (
+                    <span className="badge text-xs" style={{background: 'rgba(245, 158, 11, 0.3)', color: '#fcd34d'}}>Owner</span>
+                  )}
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-light text-sm mb-2">Invite Code:</p>
+                  <div className="invite-code">{activeGroupData.inviteCode}</div>
+                  <button onClick={() => copyToClipboard(activeGroupData.inviteCode)} className="btn btn-primary w-full mt-2 text-sm">
+                    📋 Copy Code
+                  </button>
+                </div>
+
+                <div className="divider"></div>
+
+                <div className="mb-3">
+                  <p className="text-light text-sm mb-2">Members ({groupMembers.length}):</p>
+                  <div className="member-list">
+                    {groupMembers.map(member => (
+                      <div key={member.userId} className="member-item">
+                        {member.photoURL ? (
+                          <img src={member.photoURL} alt={member.displayName} className="member-avatar" />
+                        ) : (
+                          <div className="member-avatar" style={{background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px'}}>
+                            {member.displayName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-white text-sm">{member.displayName}</span>
+                        {activeGroupData.ownerId === currentUser.uid && member.userId !== currentUser.uid && (
+                          <button onClick={() => handleRemoveMember(member.userId)} className="remove-btn" style={{fontSize: '14px', marginLeft: '4px'}}>✕</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={handleLeaveGroup} disabled={groupLoading} className="btn w-full text-sm" style={{background: 'rgba(239,68,68,0.3)', color: '#fca5a5'}}>
+                  🚪 Leave Group
+                </button>
+              </div>
+            )}
+
+            {/* My Groups */}
+            {currentGroups.length > 0 && (
+              <div className="card mb-4">
+                <h2 className="text-white font-semibold mb-3">My Groups</h2>
+                {currentGroups.map(group => (
+                  <div key={group.id} className="group-card">
+                    <div>
+                      <div className="text-white font-medium">{group.name}</div>
+                      <div className="text-light text-xs">{group.memberCount} {group.memberCount === 1 ? 'member' : 'members'}</div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        switchToGroup(group.id);
+                        setShowGroupManager(false);
+                      }}
+                      className="btn btn-primary text-sm"
+                      style={{padding: '6px 12px'}}
+                      disabled={selectedGroupId === group.id}
+                    >
+                      {selectedGroupId === group.id ? 'Active' : 'Switch'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Create Group Form */}
+            <div className="card mb-4">
+              <h2 className="text-white font-semibold mb-3">Create New Group</h2>
+              <input
+                type="text"
+                value={createGroupName}
+                onChange={(e) => setCreateGroupName(e.target.value)}
+                placeholder="Enter group name (3-30 characters)"
+                className="input mb-3"
+                maxLength={30}
+              />
+              <button
+                onClick={handleCreateGroup}
+                disabled={groupLoading || createGroupName.trim().length < 3}
+                className="btn accent-emerald text-white w-full"
+              >
+                {groupLoading ? 'Creating...' : '✨ Create Group'}
+              </button>
+            </div>
+
+            {/* Join Group Form */}
+            <div className="card">
+              <h2 className="text-white font-semibold mb-3">Join with Code</h2>
+              <input
+                type="text"
+                value={joinGroupCode}
+                onChange={(e) => setJoinGroupCode(e.target.value.toUpperCase())}
+                placeholder="Enter 6-character code"
+                className="input mb-3"
+                maxLength={6}
+                style={{textTransform: 'uppercase', fontFamily: 'monospace', letterSpacing: '2px'}}
+              />
+              <button
+                onClick={handleJoinGroup}
+                disabled={groupLoading || joinGroupCode.length !== 6}
+                className="btn accent-blue text-white w-full"
+              >
+                {groupLoading ? 'Joining...' : '🚀 Join Group'}
+              </button>
+            </div>
+
+            <p className="text-center text-xs mt-4" style={{color: 'rgba(255,255,255,0.4)'}}>
+              Groups sync across devices • Max 20 members per group
+            </p>
+          </div>
+        </div>
+      );
+
+      if (showGroupManager) return <GroupManagerModal />;
 
       // LEADERBOARD SCREEN
       const LeaderboardScreen = () => {
@@ -2318,6 +2839,25 @@
               </div>
             )}
 
+            {/* Group Selector */}
+            {firebaseConfigured && currentUser && (
+              <div className="mb-4">
+                <select
+                  value={selectedGroupId || ''}
+                  onChange={(e) => switchToGroup(e.target.value)}
+                  className="input group-selector w-full"
+                  style={{fontSize: '14px', padding: '10px 12px'}}
+                >
+                  <option value="">No Group Selected</option>
+                  {currentGroups.map(group => (
+                    <option key={group.id} value={group.id}>
+                      {group.name} ({group.memberCount} {group.memberCount === 1 ? 'member' : 'members'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="text-center mb-8 pt-8">
               <h1 className="text-4xl font-bold text-white mb-2"><img src="./icon-192.png" alt="" style={{width: '40px', height: '40px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', borderRadius: '8px'}} />Game Night</h1>
               <p className="text-light mb-1">Score Keeper</p>
@@ -2327,7 +2867,21 @@
                 <p className="text-xs mt-2" style={{color: '#22c55e'}}>☁️ Signed in - Ready for cloud sync</p>
               )}
             </div>
-            
+
+            {/* Manage Groups Button */}
+            {firebaseConfigured && currentUser && (
+              <button onClick={() => setShowGroupManager(true)} className="w-full mb-4" style={{background: 'linear-gradient(135deg, #581c87 0%, #7c3aed 100%)', border: 'none', borderRadius: '16px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                  <span style={{fontSize: '32px'}}>👥</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{color: 'white', fontSize: '18px', fontWeight: 'bold'}}>Manage Groups</div>
+                    <div style={{color: 'rgba(255,255,255,0.8)', fontSize: '13px'}}>Create, join, and switch groups</div>
+                  </div>
+                </div>
+                <span style={{color: 'rgba(255,255,255,0.5)', fontSize: '24px'}}>→</span>
+              </button>
+            )}
+
             <button onClick={() => setShowLeaderboard(true)} className="w-full mb-6" style={{background: 'linear-gradient(135deg, #78350f 0%, #d97706 100%)', border: 'none', borderRadius: '16px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
               <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
                 <span style={{fontSize: '32px'}}>🏆</span>
@@ -2351,7 +2905,7 @@
             </div>
             <p className="text-center text-light text-sm mt-8">ðŸ“± Add to home screen for offline use!</p>
             {firebaseConfigured && !currentUser && !authLoading && (
-              <p className="text-center text-xs mt-2" style={{color: '#22c55e'}}>☁️ Cloud sync available - Sign in to enable</p>
+              <p className="text-center text-xs mt-2" style={{color: '#22c55e'}}>☁️ Sign in to unlock player groups and cloud sync</p>
             )}
             <p className="text-center text-xs mt-4" style={{color: 'rgba(255,255,255,0.4)', lineHeight: '1.4'}}>
               YahtzeeÂ® is a trademark of Hasbro. Phase 10Â® is a trademark of Mattel.<br/>

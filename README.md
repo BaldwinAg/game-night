@@ -1,23 +1,25 @@
 # 🎲 Game Night Scorekeeper
 
-**Version 5.1.0** | Google Authentication
+**Version 5.2.0** | Player Groups
 
 A mobile-friendly Progressive Web App (PWA) for tracking scores across multiple card and dice games. Perfect for family game nights!
 
 **Presented by Baldwin Ag**
 
-## 🆕 What's New in v5.1.0
+## 🆕 What's New in v5.2.0
 
-- **Google Sign-In**: Sign in with your Google account
-- **User Profiles**: Automatic profile creation in Firestore
-- **Auth UI**: Clean sign-in/sign-out controls with avatar display
-- **Cloud Ready**: Authenticated users are ready for upcoming cloud sync features
+- **👥 Player Groups**: Create and join game night groups with friends and family
+- **🎟️ Invite Codes**: Share 6-character codes to invite members to your groups
+- **🔄 Group Switching**: Select your active group from a dropdown on the home screen
+- **👑 Group Management**: Full member management with owner controls
+- **⚡ Real-Time Sync**: Group changes sync instantly across all devices
+- **📱 Multi-Group Support**: Be a member of multiple groups simultaneously
 
 ### Coming Soon
-- **v5.2.0**: Player groups with invite codes
 - **v5.3.0**: Cloud match recording with points system
 - **v5.4.0**: Synced leaderboards (wins + points)
 - **v5.5.0**: Match history view
+- **v5.6.0**: Offline support with sync
 
 See [ROADMAP.md](ROADMAP.md) for the full development plan.
 
@@ -56,6 +58,15 @@ See [ROADMAP.md](ROADMAP.md) for the full development plan.
 - 👥 **Saved players** - Remember frequent players
 - ➕ **Quick add** - Tap saved names to add to game
 - 🔄 **Reusable** - Same players across different games
+
+### Player Groups (Sign-In Required)
+- 👨‍👩‍👧‍👦 **Create groups** - Organize different friend circles
+- 🎟️ **Invite codes** - Share 6-character codes to invite members
+- 🔄 **Group switching** - Select active group from dropdown
+- 👑 **Owner controls** - Remove members, manage group
+- 🚪 **Leave groups** - Exit groups anytime with automatic ownership transfer
+- ⚡ **Real-time sync** - Changes appear instantly on all devices
+- 📊 **Up to 20 members** per group
 
 ### Wins Tracking
 - 🏆 **Leaderboard** - Track total wins per player
@@ -184,6 +195,7 @@ This app is not affiliated with or endorsed by any game manufacturers.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 5.2.0 | Jan 2025 | Player groups with invite codes |
 | 5.1.0 | Jan 2025 | Google Sign-In authentication |
 | 5.0.0 | Jan 2025 | Firebase foundation, version display |
 | 4.11 | Jan 2025 | Modal-based score entry fix |
