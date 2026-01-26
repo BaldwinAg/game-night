@@ -7,13 +7,16 @@
 const CACHE_NAME = 'game-night-v17';
 const APP_VERSION = '5.1.0';
 
-const urlsToCache = [
+const requiredUrls = [
   './',
   './index.html',
-  './firebase-config.js',
   './manifest.json',
   './icon-192.png',
   './icon-512.png'
+];
+
+const optionalUrls = [
+  './firebase-config.js'
 ];
 
 // Install event - cache resources
@@ -21,9 +24,26 @@ self.addEventListener('install', event => {
   console.log(`[SW ${APP_VERSION}] Installing...`);
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log(`[SW ${APP_VERSION}] Caching app shell`);
-        return cache.addAll(urlsToCache);
+      .then(async cache => {
+        console.log(`[SW ${APP_VERSION}] Caching required files...`);
+        // Cache required files (will fail install if any missing)
+        await cache.addAll(requiredUrls);
+
+        // Try to cache optional files (won't fail if missing)
+        console.log(`[SW ${APP_VERSION}] Caching optional files...`);
+        for (const url of optionalUrls) {
+          try {
+            const response = await fetch(url);
+            if (response.ok) {
+              await cache.put(url, response);
+              console.log(`[SW ${APP_VERSION}] Cached optional: ${url}`);
+            }
+          } catch (err) {
+            console.log(`[SW ${APP_VERSION}] Optional file not found: ${url}`);
+          }
+        }
+
+        console.log(`[SW ${APP_VERSION}] Cache complete`);
       })
       .catch(err => {
         console.log(`[SW ${APP_VERSION}] Cache install failed:`, err);
