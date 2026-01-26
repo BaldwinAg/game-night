@@ -207,9 +207,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 5.0.0
+    // Version 5.1.0 - Google Authentication
     // ============================================
-    const APP_VERSION = '5.0.0';
+    const APP_VERSION = '5.1.0';
     
     // Firebase initialization (if configured)
     let firebaseApp = null;
@@ -564,6 +564,53 @@
       const [savedPlayersList, setSavedPlayersList] = useState([]);
       const [saveNewPlayer, setSaveNewPlayer] = useState(true);
 
+      // Authentication state
+      const [currentUser, setCurrentUser] = useState(null);
+      const [authLoading, setAuthLoading] = useState(true);
+
+      // Firebase Auth Observer - Listen for auth state changes
+      useEffect(() => {
+        if (!firebaseAuth) {
+          setAuthLoading(false);
+          return;
+        }
+
+        const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
+          setCurrentUser(user);
+          setAuthLoading(false);
+
+          if (user) {
+            // User signed in - create/update profile in Firestore
+            try {
+              const userRef = firebaseDb.collection('users').doc(user.uid);
+              const userDoc = await userRef.get();
+
+              if (!userDoc.exists) {
+                // First time login - create profile
+                await userRef.set({
+                  displayName: user.displayName || 'Anonymous',
+                  email: user.email,
+                  photoURL: user.photoURL,
+                  createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                  lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log('[Auth] Created new user profile for:', user.displayName);
+              } else {
+                // Update last login
+                await userRef.update({
+                  lastLogin: firebase.firestore.FieldValue.serverTimestamp()
+                });
+                console.log('[Auth] Updated last login for:', user.displayName);
+              }
+            } catch (error) {
+              console.error('[Auth] Error updating user profile:', error);
+            }
+          }
+        });
+
+        return () => unsubscribe();
+      }, []);
+
       // Load wins and saved players on mount
       useEffect(() => {
         setWinsData(loadWins());
@@ -695,6 +742,37 @@
         if (confirm('Clear ALL wins data? This cannot be undone!')) {
           setWinsData({});
           saveWins({});
+        }
+      };
+
+      // Authentication functions
+      const handleSignIn = async () => {
+        if (!firebaseAuth) {
+          alert('Firebase is not configured. Running in local-only mode.');
+          return;
+        }
+
+        try {
+          const provider = new firebase.auth.GoogleAuthProvider();
+          await firebaseAuth.signInWithPopup(provider);
+          console.log('[Auth] Sign-in successful');
+        } catch (error) {
+          console.error('[Auth] Sign-in error:', error);
+          if (error.code !== 'auth/popup-closed-by-user') {
+            alert('Sign-in failed: ' + error.message);
+          }
+        }
+      };
+
+      const handleSignOut = async () => {
+        if (!firebaseAuth) return;
+
+        try {
+          await firebaseAuth.signOut();
+          console.log('[Auth] Sign-out successful');
+        } catch (error) {
+          console.error('[Auth] Sign-out error:', error);
+          alert('Sign-out failed: ' + error.message);
         }
       };
 
@@ -2217,11 +2295,37 @@
       if (screen === 'home') return (
         <div className="app bg-slate">
           <div className="container">
+            {/* Auth Header */}
+            {firebaseConfigured && (
+              <div style={{display: 'flex', justifyContent: 'flex-end', paddingTop: '16px', paddingBottom: '8px'}}>
+                {authLoading ? (
+                  <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '14px'}}>Loading...</div>
+                ) : currentUser ? (
+                  <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
+                      {currentUser.photoURL && (
+                        <img src={currentUser.photoURL} alt="Profile" style={{width: '32px', height: '32px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)'}} />
+                      )}
+                      <span style={{color: 'white', fontSize: '14px', fontWeight: '500'}}>{currentUser.displayName}</span>
+                    </div>
+                    <button onClick={handleSignOut} style={{background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '6px 12px', color: 'white', fontSize: '13px', cursor: 'pointer', fontWeight: '500'}}>Sign Out</button>
+                  </div>
+                ) : (
+                  <button onClick={handleSignIn} style={{background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '8px 16px', color: 'white', fontSize: '14px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px'}}>
+                    <span>🔐</span> Sign In with Google
+                  </button>
+                )}
+              </div>
+            )}
+
             <div className="text-center mb-8 pt-8">
               <h1 className="text-4xl font-bold text-white mb-2"><img src="icon-192.png" alt="" style={{width: '40px', height: '40px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', borderRadius: '8px'}} />Game Night</h1>
               <p className="text-light mb-1">Score Keeper</p>
               <p className="text-xs" style={{color: '#22c55e'}}>presented by <span className="font-semibold">Baldwin Ag</span></p>
               <p className="text-xs mt-2" style={{color: 'rgba(255,255,255,0.4)'}}>v{APP_VERSION}</p>
+              {currentUser && (
+                <p className="text-xs mt-2" style={{color: '#22c55e'}}>☁️ Signed in - Ready for cloud sync</p>
+              )}
             </div>
             
             <button onClick={() => setShowLeaderboard(true)} className="w-full mb-6" style={{background: 'linear-gradient(135deg, #78350f 0%, #d97706 100%)', border: 'none', borderRadius: '16px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
@@ -2246,8 +2350,8 @@
               ))}
             </div>
             <p className="text-center text-light text-sm mt-8">ðŸ“± Add to home screen for offline use!</p>
-            {firebaseConfigured && (
-              <p className="text-center text-xs mt-2" style={{color: '#22c55e'}}>☁️ Cloud sync available - Sign in to sync across devices</p>
+            {firebaseConfigured && !currentUser && !authLoading && (
+              <p className="text-center text-xs mt-2" style={{color: '#22c55e'}}>☁️ Cloud sync available - Sign in to enable</p>
             )}
             <p className="text-center text-xs mt-4" style={{color: 'rgba(255,255,255,0.4)', lineHeight: '1.4'}}>
               YahtzeeÂ® is a trademark of Hasbro. Phase 10Â® is a trademark of Mattel.<br/>

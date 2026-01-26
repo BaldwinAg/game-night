@@ -1,6 +1,6 @@
 /**
  * Firebase Configuration for Game Night Scorekeeper
- * Version: 5.0.0
+ * Version: 5.1.0
  * Project: game-night-9580e
  */
 

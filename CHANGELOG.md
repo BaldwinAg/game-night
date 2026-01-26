@@ -2,6 +2,30 @@
 
 All notable changes to Game Night Scorekeeper will be documented in this file.
 
+## [5.1.0] - 2025-01-26
+
+### Added
+- **Google Sign-In Authentication**: Users can now sign in with their Google account
+- **User Profile Management**: Automatic user profile creation in Firestore on first login
+- **Auth State Observer**: Real-time authentication state tracking
+- **User Avatar Display**: Profile picture and name shown in header when signed in
+- **Sign In/Sign Out UI**: Clean authentication controls in the app header
+- **Firestore User Collection**: User profiles stored with displayName, email, photoURL, and timestamps
+
+### Changed
+- Updated app version to 5.1.0
+- Cloud sync message now only appears when Firebase is configured but user is not signed in
+- Authentication state integrated throughout the app
+- Service worker cache should be updated to v17
+
+### Technical
+- Added Firebase auth state observer with automatic profile creation
+- User profiles include: displayName, email, photoURL, createdAt, lastLogin
+- Local-only mode remains fully functional for users without Firebase or without signing in
+- Graceful fallback if Firebase is not configured
+
+---
+
 ## [5.0.0] - 2025-01-26
 
 ### Added

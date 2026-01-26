@@ -1,22 +1,23 @@
 # 🎲 Game Night Scorekeeper
 
-**Version 5.0.0** | Firebase Integration Foundation
+**Version 5.1.0** | Google Authentication
 
 A mobile-friendly Progressive Web App (PWA) for tracking scores across multiple card and dice games. Perfect for family game nights!
 
 **Presented by Baldwin Ag**
 
-## 🆕 What's New in v5.0.0
+## 🆕 What's New in v5.1.0
 
-- **Firebase Foundation**: App is now ready for cloud sync (coming in v5.1+)
-- **Version Display**: Version number shown on home screen
-- **Multi-device Prep**: Architecture ready for syncing across devices
+- **Google Sign-In**: Sign in with your Google account
+- **User Profiles**: Automatic profile creation in Firestore
+- **Auth UI**: Clean sign-in/sign-out controls with avatar display
+- **Cloud Ready**: Authenticated users are ready for upcoming cloud sync features
 
 ### Coming Soon
-- **v5.1.0**: Google Sign-In authentication
 - **v5.2.0**: Player groups with invite codes
 - **v5.3.0**: Cloud match recording with points system
 - **v5.4.0**: Synced leaderboards (wins + points)
+- **v5.5.0**: Match history view
 
 See [ROADMAP.md](ROADMAP.md) for the full development plan.
 
@@ -183,6 +184,7 @@ This app is not affiliated with or endorsed by any game manufacturers.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 5.1.0 | Jan 2025 | Google Sign-In authentication |
 | 5.0.0 | Jan 2025 | Firebase foundation, version display |
 | 4.11 | Jan 2025 | Modal-based score entry fix |
 | 4.8 | Jan 2025 | Pitch game added |

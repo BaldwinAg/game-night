@@ -111,19 +111,19 @@ firestore/
 
 ## 📅 Development Phases
 
-### Phase 1: Foundation (v5.0.0) ✅ Current
-- [ ] Create roadmap document
-- [ ] Add version display to app
-- [ ] Set up Firebase configuration structure
-- [ ] Create Firebase setup guide
+### Phase 1: Foundation (v5.0.0) ✅ Complete
+- [x] Create roadmap document
+- [x] Add version display to app
+- [x] Set up Firebase configuration structure
+- [x] Create Firebase setup guide
 
-### Phase 2: Authentication (v5.1.0)
-- [ ] Add Firebase SDK to app
-- [ ] Implement Google Sign-In
-- [ ] Create user profile in Firestore on first login
-- [ ] Add sign-in/sign-out UI
-- [ ] Show user avatar when signed in
-- [ ] Maintain local-only mode for non-signed-in users
+### Phase 2: Authentication (v5.1.0) ✅ Current
+- [x] Add Firebase SDK to app
+- [x] Implement Google Sign-In
+- [x] Create user profile in Firestore on first login
+- [x] Add sign-in/sign-out UI
+- [x] Show user avatar when signed in
+- [x] Maintain local-only mode for non-signed-in users
 
 ### Phase 3: Groups (v5.2.0)
 - [ ] Create group management UI
@@ -277,9 +277,9 @@ firestore/
 
 | Version | Description | Status |
 |---------|-------------|--------|
-| 4.11 | Current production (local only) | ✅ Released |
-| 5.0.0 | Foundation + roadmap | 🚧 In Progress |
-| 5.1.0 | Authentication | 📋 Planned |
+| 4.11 | Pre-Firebase production (local only) | ✅ Released |
+| 5.0.0 | Foundation + roadmap | ✅ Released |
+| 5.1.0 | Authentication | ✅ Released |
 | 5.2.0 | Groups | 📋 Planned |
 | 5.3.0 | Match Recording | 📋 Planned |
 | 5.4.0 | Synced Leaderboards | 📋 Planned |
