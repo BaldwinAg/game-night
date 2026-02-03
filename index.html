@@ -2846,6 +2846,8 @@
                       )}
                     </span>
                     <button onClick={() => removePlayer(player.id)} className="remove-btn">X</button>
+                  </div>
+                ))
               )}
               <p className="text-lighter text-sm mt-3 text-center">{players.length < game.minPlayers ? `Add at least ${game.minPlayers} players` : `${players.length}/${game.maxPlayers} players`}</p>
             </div>
