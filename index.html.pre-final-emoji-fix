@@ -195,6 +195,59 @@
       .container { max-width: 960px; }
       .game-cards-grid { grid-template-columns: repeat(3, 1fr); }
     }
+
+    /* Group Management Styles */
+    .group-selector {
+      font-size: 14px;
+      padding: 8px 12px;
+      margin-bottom: 16px;
+    }
+
+    .group-card {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      margin-bottom: 8px;
+    }
+
+    .member-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.3);
+      object-fit: cover;
+    }
+
+    .invite-code {
+      font-family: monospace;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 2px;
+      padding: 12px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 8px;
+      text-align: center;
+      user-select: all;
+    }
+
+    .member-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .member-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 8px;
+    }
   </style>
 </head>
 <body>
@@ -207,9 +260,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 5.1.0 - Google Authentication
+    // Version 5.2.0 - Player Groups
     // ============================================
-    const APP_VERSION = '5.1.0';
+    const APP_VERSION = '5.2.0';
     
     // Firebase initialization (if configured)
     let firebaseApp = null;
@@ -271,50 +324,26 @@
       }
     };
 
-    // Save Pitch house rules to Firestore (if signed in) or localStorage
-    const savePitchHouseRules = async (rules, user) => {
-      if (user && firebaseDb) {
-        try {
-          await firebaseDb.collection('users').doc(user.uid).collection('settings').doc('pitchHouseRules').set(rules);
-          console.log('[HouseRules] Saved to Firestore');
-        } catch (e) {
-          console.error('[HouseRules] Error saving to Firestore:', e);
-        }
-      } else {
-        // Fallback to localStorage if not signed in
-        try {
-          localStorage.setItem('pitchHouseRules', JSON.stringify(rules));
-          console.log('[HouseRules] Saved to localStorage');
-        } catch (e) {
-          console.error('[HouseRules] Error saving to localStorage:', e);
-        }
+    // Load selected group from localStorage
+    const loadSelectedGroup = () => {
+      try {
+        return localStorage.getItem('selectedGroupId');
+      } catch (e) {
+        return null;
       }
     };
 
-    // Load Pitch house rules from Firestore (if signed in) or localStorage
-    const loadPitchHouseRules = async (user) => {
-      if (user && firebaseDb) {
-        try {
-          const doc = await firebaseDb.collection('users').doc(user.uid).collection('settings').doc('pitchHouseRules').get();
-          if (doc.exists) {
-            console.log('[HouseRules] Loaded from Firestore');
-            return doc.data();
-          }
-        } catch (e) {
-          console.error('[HouseRules] Error loading from Firestore:', e);
-        }
-      }
-      // Fallback to localStorage
+    // Save selected group to localStorage
+    const saveSelectedGroup = (groupId) => {
       try {
-        const saved = localStorage.getItem('pitchHouseRules');
-        if (saved) {
-          console.log('[HouseRules] Loaded from localStorage');
-          return JSON.parse(saved);
+        if (groupId) {
+          localStorage.setItem('selectedGroupId', groupId);
+        } else {
+          localStorage.removeItem('selectedGroupId');
         }
       } catch (e) {
-        console.error('[HouseRules] Error loading from localStorage:', e);
+        console.log('[Groups] Could not save selected group');
       }
-      return null;
     };
 
     const GAMES = {
@@ -353,18 +382,18 @@
           ],
           scoring: [
             "UPPER SECTION (Ones thru Sixes):",
-            "  â€¢ Add only the dice showing that number",
-            "  â€¢ Example: Three 4s = 12 points in Fours",
-            "  â€¢ BONUS: Score 35 extra if upper total â‰¥ 63",
+            "  • Add only the dice showing that number",
+            "  • Example: Three 4s = 12 points in Fours",
+            "  • BONUS: Score 35 extra if upper total ≥ 63",
             "",
             "LOWER SECTION:",
-            "  â€¢ 3 of a Kind: Sum of ALL dice (need 3 matching)",
-            "  â€¢ 4 of a Kind: Sum of ALL dice (need 4 matching)",
-            "  â€¢ Full House: 25 pts (3 of one + 2 of another)",
-            "  â€¢ Small Straight: 30 pts (4 in sequence: 1-2-3-4, 2-3-4-5, or 3-4-5-6)",
-            "  â€¢ Large Straight: 40 pts (5 in sequence: 1-2-3-4-5 or 2-3-4-5-6)",
-            "  â€¢ YAHTZEE: 50 pts (all 5 dice the same)",
-            "  â€¢ Chance: Sum of all dice (use for bad rolls)"
+            "  • 3 of a Kind: Sum of ALL dice (need 3 matching)",
+            "  • 4 of a Kind: Sum of ALL dice (need 4 matching)",
+            "  • Full House: 25 pts (3 of one + 2 of another)",
+            "  • Small Straight: 30 pts (4 in sequence: 1-2-3-4, 2-3-4-5, or 3-4-5-6)",
+            "  • Large Straight: 40 pts (5 in sequence: 1-2-3-4-5 or 2-3-4-5-6)",
+            "  • YAHTZEE: 50 pts (all 5 dice the same)",
+            "  • Chance: Sum of all dice (use for bad rolls)"
           ],
           winning: "After all 13 categories are filled, add up your total. Highest score wins!"
         }
@@ -379,19 +408,19 @@
             "You can also 'hit' on others' laid phases (add matching cards)",
             "Discard one card to end your turn",
             "Round ends when someone goes out (no cards left)",
-            "You MUST complete phases in order (1 â†’ 2 â†’ 3... â†’ 10)"
+            "You MUST complete phases in order (1 ←’ 2 ←’ 3... ←’ 10)"
           ],
           scoring: [
             "PENALTY POINTS (cards left in hand):",
-            "  â€¢ Cards 1-9: 5 points each",
-            "  â€¢ Cards 10-12: 10 points each",
-            "  â€¢ Skip cards: 15 points each",
-            "  â€¢ Wild cards: 25 points each",
+            "  • Cards 1-9: 5 points each",
+            "  • Cards 10-12: 10 points each",
+            "  • Skip cards: 15 points each",
+            "  • Wild cards: 25 points each",
             "",
             "IMPORTANT:",
-            "  â€¢ If you complete your phase, advance to next phase",
-            "  â€¢ If you don't complete it, stay on same phase",
-            "  â€¢ Points are BAD - you want the lowest score!"
+            "  • If you complete your phase, advance to next phase",
+            "  • If you don't complete it, stay on same phase",
+            "  • Points are BAD - you want the lowest score!"
           ],
           winning: "First player to complete Phase 10 wins! If tied, lowest total penalty points breaks the tie."
         }
@@ -410,27 +439,27 @@
           ],
           scoring: [
             "SINGLE DICE:",
-            "  â€¢ Each 1 = 100 points",
-            "  â€¢ Each 5 = 50 points",
-            "  â€¢ Single 2, 3, 4, 6 = nothing!",
+            "  • Each 1 = 100 points",
+            "  • Each 5 = 50 points",
+            "  • Single 2, 3, 4, 6 = nothing!",
             "",
             "THREE OF A KIND:",
-            "  â€¢ Three 1s = 1,000 points",
-            "  â€¢ Three 2s = 200 points",
-            "  â€¢ Three 3s = 300 points",
-            "  â€¢ Three 4s = 400 points",
-            "  â€¢ Three 5s = 500 points",
-            "  â€¢ Three 6s = 600 points",
+            "  • Three 1s = 1,000 points",
+            "  • Three 2s = 200 points",
+            "  • Three 3s = 300 points",
+            "  • Three 4s = 400 points",
+            "  • Three 5s = 500 points",
+            "  • Three 6s = 600 points",
             "",
             "FOUR+ OF A KIND:",
-            "  â€¢ 4 of a kind = 2Ã— the triple value",
-            "  â€¢ 5 of a kind = 4Ã— the triple value",
-            "  â€¢ 6 of a kind = 8Ã— the triple value",
+            "  • 4 of a kind = 2Ã— the triple value",
+            "  • 5 of a kind = 4Ã— the triple value",
+            "  • 6 of a kind = 8Ã— the triple value",
             "",
             "SPECIAL COMBOS:",
-            "  â€¢ Straight (1-2-3-4-5-6) = 1,500 points",
-            "  â€¢ Three Pairs = 1,500 points",
-            "  â€¢ Two Triplets = 2,500 points"
+            "  • Straight (1-2-3-4-5-6) = 1,500 points",
+            "  • Three Pairs = 1,500 points",
+            "  • Two Triplets = 2,500 points"
           ],
           winning: "First player to reach 10,000 points wins! Final round: others get one more turn to beat the leader."
         }
@@ -442,22 +471,22 @@
           gameplay: [
             "Draw one card (from stock OR discard pile)",
             "Form melds in your hand:",
-            "  â€¢ Sets: 3-4 cards of same rank (e.g., 7-7-7)",
-            "  â€¢ Runs: 3+ consecutive same suit (e.g., 4â™ -5â™ -6â™ )",
+            "  • Sets: 3-4 cards of same rank (e.g., 7-7-7)",
+            "  • Runs: 3+ consecutive same suit (e.g., 4â™ -5â™ -6â™ )",
             "Discard one card to end your turn",
             "KNOCK: End round when deadwood â‰¤ 10",
             "GIN: Knock with 0 deadwood for bonus!"
           ],
           scoring: [
             "CARD VALUES (for deadwood):",
-            "  â€¢ Face cards (J, Q, K): 10 points",
-            "  â€¢ Aces: 1 point",
-            "  â€¢ Number cards: Face value",
+            "  • Face cards (J, Q, K): 10 points",
+            "  • Aces: 1 point",
+            "  • Number cards: Face value",
             "",
             "WINNING THE HAND:",
-            "  â€¢ Knock: Score difference between deadwoods",
-            "  â€¢ Gin Bonus: 25 points + opponent's deadwood",
-            "  â€¢ Undercut: If defender has â‰¤ knocker's deadwood,",
+            "  • Knock: Score difference between deadwoods",
+            "  • Gin Bonus: 25 points + opponent's deadwood",
+            "  • Undercut: If defender has â‰¤ knocker's deadwood,",
             "    defender scores 25 + the difference!",
             "",
             "BIG GIN: Go gin on 11 cards (before discarding) = 31 bonus"
@@ -471,34 +500,34 @@
           setup: "Deal 6 cards each. Each player discards 2 cards face-down to the 'crib' (dealer's bonus hand). Cut deck to reveal 'starter' card.",
           gameplay: [
             "PEGGING: Take turns playing cards, keeping running total",
-            "  â€¢ Can't exceed 31 â€” say 'Go' if you can't play",
-            "  â€¢ Hit 31 exactly or last to play = points",
-            "  â€¢ Reset to 0 and continue until cards gone",
+            "  • Can't exceed 31 â€” say 'Go' if you can't play",
+            "  • Hit 31 exactly or last to play = points",
+            "  • Reset to 0 and continue until cards gone",
             "THE SHOW: Count points in your hand + starter card",
-            "  â€¢ Non-dealer counts first, then dealer",
-            "  â€¢ Dealer also counts the crib",
+            "  • Non-dealer counts first, then dealer",
+            "  • Dealer also counts the crib",
             "Alternate dealing each round"
           ],
           scoring: [
             "PEGGING (during play):",
-            "  â€¢ 15 exactly: 2 pts",
-            "  â€¢ 31 exactly: 2 pts",
-            "  â€¢ Pair: 2 pts",
-            "  â€¢ Three of a kind: 6 pts",
-            "  â€¢ Four of a kind: 12 pts",
-            "  â€¢ Run (3+): 1 pt per card",
-            "  â€¢ Go (opponent can't play): 1 pt",
-            "  â€¢ Last card: 1 pt",
+            "  • 15 exactly: 2 pts",
+            "  • 31 exactly: 2 pts",
+            "  • Pair: 2 pts",
+            "  • Three of a kind: 6 pts",
+            "  • Four of a kind: 12 pts",
+            "  • Run (3+): 1 pt per card",
+            "  • Go (opponent can't play): 1 pt",
+            "  • Last card: 1 pt",
             "",
             "THE SHOW (hand counting):",
-            "  â€¢ 15s: 2 pts per combo totaling 15",
-            "  â€¢ Pairs: 2 pts each",
-            "  â€¢ Runs: 1 pt per card in sequence",
-            "  â€¢ Flush: 4 pts (5 if starter matches)",
-            "  â€¢ Nobs: 1 pt (Jack matching starter suit)",
+            "  • 15s: 2 pts per combo totaling 15",
+            "  • Pairs: 2 pts each",
+            "  • Runs: 1 pt per card in sequence",
+            "  • Flush: 4 pts (5 if starter matches)",
+            "  • Nobs: 1 pt (Jack matching starter suit)",
             "",
             "SPECIAL:",
-            "  â€¢ His Heels: 2 pts if starter is a Jack (to dealer)"
+            "  • His Heels: 2 pts if starter is a Jack (to dealer)"
           ],
           winning: "First to 121 wins! If winner hits 121 before loser reaches 91, it's a 'skunk' (double win)!"
         }
@@ -517,14 +546,14 @@
           ],
           scoring: [
             "10-POINT:",
-            "  â€¢ Ace (High): 1 pt",
-            "  â€¢ Jack: 1 pt",
-            "  â€¢ Off-Jack (Jick): 1 pt",
-            "  â€¢ High Joker: 1 pt",
-            "  â€¢ Low Joker: 1 pt",
-            "  â€¢ 10: 1 pt",
-            "  â€¢ 3: 3 pts",
-            "  â€¢ 2 (Low): 1 pt - goes to HOLDER",
+            "  • Ace (High): 1 pt",
+            "  • Jack: 1 pt",
+            "  • Off-Jack (Jick): 1 pt",
+            "  • High Joker: 1 pt",
+            "  • Low Joker: 1 pt",
+            "  • 10: 1 pt",
+            "  • 3: 3 pts",
+            "  • 2 (Low): 1 pt - goes to HOLDER",
             "",
             "13-POINT: Add Off-3 (3 pts)",
             "",
@@ -556,8 +585,8 @@
       ],
       lower: [
         { key: 'threeKind', name: '3 of a Kind', icon: '🎲' }, { key: 'fourKind', name: '4 of a Kind', icon: '🎲' },
-        { key: 'fullHouse', name: 'Full House', icon: '🏠' }, { key: 'smallStraight', name: 'Sm Straight', icon: '📈' },
-        { key: 'largeStraight', name: 'Lg Straight', icon: '📈' }, { key: 'yahtzee', name: 'YAHTZEE', icon: '🌟' },
+        { key: 'fullHouse', name: 'Full House', icon: 'ðŸ ' }, { key: 'smallStraight', name: 'Sm Straight', icon: 'ðŸ“ˆ' },
+        { key: 'largeStraight', name: 'Lg Straight', icon: 'ðŸ“ˆ' }, { key: 'yahtzee', name: 'YAHTZEE', icon: '🌟' },
         { key: 'chance', name: 'Chance', icon: 'â“' },
       ]
     };
@@ -619,13 +648,20 @@
       const [showLeaderboard, setShowLeaderboard] = useState(false);
       const [savedPlayersList, setSavedPlayersList] = useState([]);
       const [saveNewPlayer, setSaveNewPlayer] = useState(true);
-      const [playerTeamSelection, setPlayerTeamSelection] = useState(1); // For Pitch teams mode
-      const [showHouseRulesPopup, setShowHouseRulesPopup] = useState(false);
-      const [savedHouseRules, setSavedHouseRules] = useState(null);
 
       // Authentication state
       const [currentUser, setCurrentUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
+
+      // Group Management state
+      const [showGroupManager, setShowGroupManager] = useState(false);
+      const [currentGroups, setCurrentGroups] = useState([]);
+      const [selectedGroupId, setSelectedGroupId] = useState(null);
+      const [activeGroupData, setActiveGroupData] = useState(null);
+      const [groupMembers, setGroupMembers] = useState([]);
+      const [createGroupName, setCreateGroupName] = useState('');
+      const [joinGroupCode, setJoinGroupCode] = useState('');
+      const [groupLoading, setGroupLoading] = useState(false);
 
       // Firebase Auth Observer - Listen for auth state changes
       useEffect(() => {
@@ -700,6 +736,59 @@
           setWinRecorded(false);
         }
       }, [screen]);
+
+      // Load selected group from localStorage
+      useEffect(() => {
+        const savedGroupId = loadSelectedGroup();
+        if (savedGroupId && firebaseConfigured && currentUser) {
+          setSelectedGroupId(savedGroupId);
+        }
+      }, [currentUser]);
+
+      // Listen to user's groups (real-time updates)
+      useEffect(() => {
+        if (!firebaseDb || !currentUser) {
+          setCurrentGroups([]);
+          return;
+        }
+
+        // Query all groups where the user is a member
+        // Note: We can't use array-contains with object, so we query all groups
+        // and filter on client side, or use a memberIds array field
+        const unsubscribe = firebaseDb.collection('groups')
+          .onSnapshot(snapshot => {
+            const allGroups = snapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data()
+            }));
+
+            // Filter to groups where current user is a member
+            const userGroups = allGroups.filter(group =>
+              group.members && group.members.some(m => m.userId === currentUser.uid)
+            );
+
+            setCurrentGroups(userGroups);
+
+            // Update active group data if it changed
+            if (selectedGroupId) {
+              const activeGroup = userGroups.find(g => g.id === selectedGroupId);
+              if (activeGroup) {
+                setActiveGroupData(activeGroup);
+                setGroupMembers(activeGroup.members || []);
+              } else {
+                // Group was deleted or user was removed
+                setSelectedGroupId(null);
+                saveSelectedGroup(null);
+                setActiveGroupData(null);
+                setGroupMembers([]);
+              }
+            }
+          }, error => {
+            console.error('[Groups] Listener error:', error);
+          });
+
+        return () => unsubscribe();
+      }, [currentUser, selectedGroupId]);
 
       // Record a win (for manual use if needed)
       const recordWin = (playerName, gameKey) => {
@@ -835,6 +924,254 @@
         }
       };
 
+      // Group Management functions
+      const generateInviteCode = async () => {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let attempts = 0;
+
+        while (attempts < 10) {
+          let code = '';
+          for (let i = 0; i < 6; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+          }
+
+          // Check uniqueness
+          const existing = await firebaseDb.collection('groups')
+            .where('inviteCode', '==', code)
+            .limit(1)
+            .get();
+
+          if (existing.empty) return code;
+          attempts++;
+        }
+
+        throw new Error('Failed to generate unique invite code');
+      };
+
+      const handleCreateGroup = async () => {
+        if (!firebaseDb || !currentUser) return;
+
+        const name = createGroupName.trim();
+        if (name.length < 3 || name.length > 30) {
+          alert('Group name must be 3-30 characters');
+          return;
+        }
+
+        setGroupLoading(true);
+
+        try {
+          const inviteCode = await generateInviteCode();
+          const groupData = {
+            name: name,
+            ownerId: currentUser.uid,
+            inviteCode: inviteCode,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            memberCount: 1,
+            members: [{
+              userId: currentUser.uid,
+              displayName: currentUser.displayName || 'Anonymous',
+              photoURL: currentUser.photoURL || '',
+              joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }]
+          };
+
+          const groupRef = await firebaseDb.collection('groups').add(groupData);
+
+          // Set as active group
+          setSelectedGroupId(groupRef.id);
+          saveSelectedGroup(groupRef.id);
+
+          // Clear form
+          setCreateGroupName('');
+
+          console.log('[Groups] Created group:', groupRef.id);
+        } catch (error) {
+          console.error('[Groups] Create error:', error);
+          alert('Failed to create group: ' + error.message);
+        } finally {
+          setGroupLoading(false);
+        }
+      };
+
+      const handleJoinGroup = async () => {
+        if (!firebaseDb || !currentUser) return;
+
+        const code = joinGroupCode.trim().toUpperCase();
+        if (code.length !== 6) {
+          alert('Invite code must be 6 characters');
+          return;
+        }
+
+        setGroupLoading(true);
+
+        try {
+          // Find group by invite code
+          const groupsSnapshot = await firebaseDb.collection('groups')
+            .where('inviteCode', '==', code)
+            .limit(1)
+            .get();
+
+          if (groupsSnapshot.empty) {
+            alert('Invalid invite code');
+            return;
+          }
+
+          const groupDoc = groupsSnapshot.docs[0];
+          const groupData = groupDoc.data();
+
+          // Check if already a member
+          const isMember = groupData.members.some(m => m.userId === currentUser.uid);
+          if (isMember) {
+            alert('You are already a member of this group');
+            setSelectedGroupId(groupDoc.id);
+            saveSelectedGroup(groupDoc.id);
+            setJoinGroupCode('');
+            return;
+          }
+
+          // Check member limit
+          if (groupData.memberCount >= 20) {
+            alert('Group is full (max 20 members)');
+            return;
+          }
+
+          // Add member
+          await firebaseDb.collection('groups').doc(groupDoc.id).update({
+            members: firebase.firestore.FieldValue.arrayUnion({
+              userId: currentUser.uid,
+              displayName: currentUser.displayName || 'Anonymous',
+              photoURL: currentUser.photoURL || '',
+              joinedAt: firebase.firestore.FieldValue.serverTimestamp()
+            }),
+            memberCount: firebase.firestore.FieldValue.increment(1)
+          });
+
+          // Set as active group
+          setSelectedGroupId(groupDoc.id);
+          saveSelectedGroup(groupDoc.id);
+          setJoinGroupCode('');
+
+          console.log('[Groups] Joined group:', groupDoc.id);
+        } catch (error) {
+          console.error('[Groups] Join error:', error);
+          alert('Failed to join group: ' + error.message);
+        } finally {
+          setGroupLoading(false);
+        }
+      };
+
+      const switchToGroup = (groupId) => {
+        if (!groupId) {
+          setSelectedGroupId(null);
+          saveSelectedGroup(null);
+          setActiveGroupData(null);
+          setGroupMembers([]);
+          return;
+        }
+
+        setSelectedGroupId(groupId);
+        saveSelectedGroup(groupId);
+
+        const groupData = currentGroups.find(g => g.id === groupId);
+        if (groupData) {
+          setActiveGroupData(groupData);
+          setGroupMembers(groupData.members || []);
+        }
+      };
+
+      const handleLeaveGroup = async () => {
+        if (!activeGroupData || !currentUser) return;
+
+        if (!confirm(`Leave "${activeGroupData.name}"?`)) return;
+
+        setGroupLoading(true);
+
+        try {
+          const groupRef = firebaseDb.collection('groups').doc(activeGroupData.id);
+          const isOwner = activeGroupData.ownerId === currentUser.uid;
+
+          // Remove self from members
+          const updatedMembers = activeGroupData.members.filter(
+            m => m.userId !== currentUser.uid
+          );
+
+          if (updatedMembers.length === 0) {
+            // Last member - delete group
+            await groupRef.delete();
+            console.log('[Groups] Deleted empty group');
+          } else if (isOwner) {
+            // Transfer ownership to oldest member
+            await groupRef.update({
+              members: updatedMembers,
+              memberCount: updatedMembers.length,
+              ownerId: updatedMembers[0].userId
+            });
+            console.log('[Groups] Transferred ownership');
+          } else {
+            // Regular member leaving
+            await groupRef.update({
+              members: updatedMembers,
+              memberCount: updatedMembers.length
+            });
+          }
+
+          // Clear local selection
+          setSelectedGroupId(null);
+          saveSelectedGroup(null);
+          setActiveGroupData(null);
+          setGroupMembers([]);
+          setShowGroupManager(false);
+
+        } catch (error) {
+          console.error('[Groups] Leave error:', error);
+          alert('Failed to leave group: ' + error.message);
+        } finally {
+          setGroupLoading(false);
+        }
+      };
+
+      const handleRemoveMember = async (userId) => {
+        if (!activeGroupData || !currentUser) return;
+        if (activeGroupData.ownerId !== currentUser.uid) {
+          alert('Only the group owner can remove members');
+          return;
+        }
+
+        const member = activeGroupData.members.find(m => m.userId === userId);
+        if (!confirm(`Remove ${member.displayName} from group?`)) return;
+
+        setGroupLoading(true);
+
+        try {
+          const updatedMembers = activeGroupData.members.filter(
+            m => m.userId !== userId
+          );
+
+          await firebaseDb.collection('groups').doc(activeGroupData.id).update({
+            members: updatedMembers,
+            memberCount: updatedMembers.length
+          });
+
+          console.log('[Groups] Removed member');
+        } catch (error) {
+          console.error('[Groups] Remove error:', error);
+          alert('Failed to remove member: ' + error.message);
+        } finally {
+          setGroupLoading(false);
+        }
+      };
+
+      const copyToClipboard = (text) => {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(text)
+            .then(() => alert('Copied to clipboard!'))
+            .catch(() => alert('Failed to copy'));
+        } else {
+          // Fallback for older browsers
+          alert(`Invite Code: ${text}`);
+        }
+      };
+
       const game = selectedGame ? GAMES[selectedGame] : null;
 
       const selectGame = (gameKey) => { setSelectedGame(gameKey); setScreen('players'); setPlayers([]); setNewPlayerName(''); setSaveNewPlayer(true); };
@@ -843,16 +1180,11 @@
         if (newPlayerName.trim() && players.length < (game?.maxPlayers || 8)) {
           const name = newPlayerName.trim();
           // Add to current game
-          const newPlayer = {
+          setPlayers([...players, {
             id: Date.now(), name, scores: [], total: 0,
             phase: selectedGame === 'phase10' ? 1 : null,
             yahtzeeScores: selectedGame === 'yahtzee' ? {} : null, yahtzeeBonus: 0
-          };
-          // Add team for Pitch teams mode
-          if (selectedGame === 'pitch' && pitchConfig.gameMode === 'teams') {
-            newPlayer.team = playerTeamSelection;
-          }
-          setPlayers([...players, newPlayer]);
+          }]);
           // Save to memory if checkbox is checked and not already saved
           if (saveNewPlayer && !savedPlayersList.includes(name)) {
             const updated = [...savedPlayersList, name].sort();
@@ -865,16 +1197,11 @@
 
       const addSavedPlayer = (name) => {
         if (players.length < (game?.maxPlayers || 8) && !players.find(p => p.name === name)) {
-          const newPlayer = {
+          setPlayers([...players, {
             id: Date.now(), name, scores: [], total: 0,
             phase: selectedGame === 'phase10' ? 1 : null,
             yahtzeeScores: selectedGame === 'yahtzee' ? {} : null, yahtzeeBonus: 0
-          };
-          // Add team for Pitch teams mode
-          if (selectedGame === 'pitch' && pitchConfig.gameMode === 'teams') {
-            newPlayer.team = playerTeamSelection;
-          }
-          setPlayers([...players, newPlayer]);
+          }]);
         }
       };
 
@@ -886,17 +1213,8 @@
 
       const removePlayer = (id) => setPlayers(players.filter(p => p.id !== id));
 
-      const startGame = async () => {
+      const startGame = () => {
         if (players.length >= (game?.minPlayers || 2)) {
-          // For Pitch, check for saved house rules
-          if (selectedGame === 'pitch') {
-            const savedRules = await loadPitchHouseRules(currentUser);
-            if (savedRules) {
-              setSavedHouseRules(savedRules);
-              setShowHouseRulesPopup(true);
-              return; // Don't start game yet - wait for user to choose
-            }
-          }
           setScreen('game'); setCurrentRound(1); setCurrentPlayerIndex(0); setActiveTab('scorecard');
           const init = {}; const initPhase = {};
           players.forEach(p => { init[p.id] = ''; initPhase[p.id] = false; });
@@ -1027,7 +1345,7 @@
       const HomeConfirmModal = () => (
         <div className="modal-overlay">
           <div className="modal">
-            <div className="modal-title">🏠 Leave Game?</div>
+            <div className="modal-title">ðŸ  Leave Game?</div>
             <div className="modal-text">Your current game progress will be lost.</div>
             <div className="modal-buttons">
               <button className="btn btn-cancel" onClick={() => setShowHomeConfirm(false)}>Cancel</button>
@@ -1105,6 +1423,97 @@
 
       const EditCribbageModal = () => {
         if (!editingCribbage) return null;
+
+        // Handle round editing
+        if (editingCribbage.type === 'round') {
+          const round = cribbageRounds[editingCribbage.roundIndex];
+          const saveRoundEdit = () => {
+            const newP1Peg = Math.max(0, parseInt(editingCribbage.player1Peg) || 0);
+            const newP2Peg = Math.max(0, parseInt(editingCribbage.player2Peg) || 0);
+            const newP1Show = Math.max(0, parseInt(editingCribbage.player1Show) || 0);
+            const newP2Show = Math.max(0, parseInt(editingCribbage.player2Show) || 0);
+
+            // Recalculate totals from scratch
+            let runningP1 = 0;
+            let runningP2 = 0;
+            const updatedRounds = cribbageRounds.map((r, i) => {
+              if (i === editingCribbage.roundIndex) {
+                runningP1 += newP1Peg + newP1Show;
+                runningP2 += newP2Peg + newP2Show;
+                return {
+                  ...r,
+                  player1Peg: newP1Peg,
+                  player2Peg: newP2Peg,
+                  player1Show: newP1Show,
+                  player2Show: newP2Show,
+                  total1: runningP1,
+                  total2: runningP2
+                };
+              } else {
+                runningP1 += r.player1Peg + r.player1Show;
+                runningP2 += r.player2Peg + r.player2Show;
+                return {...r, total1: runningP1, total2: runningP2};
+              }
+            });
+
+            setCribbageRounds(updatedRounds);
+            setPlayers(players.map((p, i) => ({
+              ...p,
+              total: i === 0 ? runningP1 : runningP2
+            })));
+            setEditingCribbage(null);
+          };
+
+          return (
+            <div className="modal-overlay">
+              <div className="modal">
+                <div className="modal-title">Edit Round {round.roundNumber}</div>
+                <div style={{marginBottom: '16px'}}>
+                  <div style={{marginBottom: '12px'}}>
+                    <div style={{color: '#fca5a5', fontSize: '13px', marginBottom: '4px'}}>🔴 {players[0]?.name}</div>
+                    <div style={{display: 'flex', gap: '8px', marginBottom: '4px'}}>
+                      <div style={{flex: 1}}>
+                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Peg</label>
+                        <input type="text" inputMode="numeric" className="input text-center"
+                          value={editingCribbage.player1Peg}
+                          onChange={(e) => setEditingCribbage({...editingCribbage, player1Peg: e.target.value})} />
+                      </div>
+                      <div style={{flex: 1}}>
+                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Show</label>
+                        <input type="text" inputMode="numeric" className="input text-center"
+                          value={editingCribbage.player1Show}
+                          onChange={(e) => setEditingCribbage({...editingCribbage, player1Show: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{color: '#93c5fd', fontSize: '13px', marginBottom: '4px'}}>🔵 {players[1]?.name}</div>
+                    <div style={{display: 'flex', gap: '8px'}}>
+                      <div style={{flex: 1}}>
+                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Peg</label>
+                        <input type="text" inputMode="numeric" className="input text-center"
+                          value={editingCribbage.player2Peg}
+                          onChange={(e) => setEditingCribbage({...editingCribbage, player2Peg: e.target.value})} />
+                      </div>
+                      <div style={{flex: 1}}>
+                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Show</label>
+                        <input type="text" inputMode="numeric" className="input text-center"
+                          value={editingCribbage.player2Show}
+                          onChange={(e) => setEditingCribbage({...editingCribbage, player2Show: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-buttons">
+                  <button className="btn btn-cancel" onClick={() => setEditingCribbage(null)}>Cancel</button>
+                  <button className="btn accent-emerald text-white" onClick={saveRoundEdit}>Save</button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Handle legacy player total editing (not used in new UI, but keep for compatibility)
         const player = players[editingCribbage.playerIndex];
         const saveCribbageEdit = () => {
           const newTotal = Math.max(0, Math.min(121, parseInt(editingCribbage.value) || 0));
@@ -1179,59 +1588,17 @@
         );
       };
 
-      const HouseRulesPopup = () => {
-        if (!showHouseRulesPopup || !savedHouseRules) return null;
-
-        const useSavedRules = () => {
-          setPitchConfig(savedHouseRules);
-          setShowHouseRulesPopup(false);
-          setScreen('game'); setCurrentRound(1); setCurrentPlayerIndex(0); setActiveTab('scorecard');
-          const init = {}; const initPhase = {};
-          players.forEach(p => { init[p.id] = ''; initPhase[p.id] = false; });
-          setRoundScores(init); setPhaseAdvance(initPhase);
-        };
-
-        const setNewRules = () => {
-          setShowHouseRulesPopup(false);
-          setScreen('game'); setCurrentRound(1); setCurrentPlayerIndex(0); setActiveTab('scorecard');
-          const init = {}; const initPhase = {};
-          players.forEach(p => { init[p.id] = ''; initPhase[p.id] = false; });
-          setRoundScores(init); setPhaseAdvance(initPhase);
-        };
-
-        return (
-          <div className="modal-overlay">
-            <div className="modal">
-              <div className="modal-title">🏠 House Rules Found</div>
-              <div className="modal-text" style={{marginBottom: '16px'}}>
-                You have saved house rules. Would you like to use them?
-              </div>
-              <div style={{background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '13px', color: 'rgba(255,255,255,0.9)'}}>
-                <div>• Point System: <strong>{savedHouseRules.pointSystem}-Point</strong></div>
-                <div>• Target Score: <strong>{savedHouseRules.customTarget || savedHouseRules.targetScore}</strong></div>
-                <div>• Moon Success: <strong>{savedHouseRules.moonReward === 'double' ? 'Double Points' : savedHouseRules.moonReward === 'autoWin' ? 'Auto-Win' : savedHouseRules.moonReward === 'fixed' ? `+${savedHouseRules.moonRewardValue} pts` : `Go to ${savedHouseRules.moonRewardValue}`}</strong></div>
-                <div>• Moon Miss: <strong>{savedHouseRules.moonPenalty === 'set' ? 'Lose Bid' : savedHouseRules.moonPenalty === 'fixed' ? `-${savedHouseRules.moonPenaltyValue} pts` : savedHouseRules.moonPenalty === 'zero' ? 'Go to Zero' : 'Lose Game'}</strong></div>
-              </div>
-              <div className="modal-buttons">
-                <button className="btn btn-cancel" onClick={setNewRules}>Set New Rules</button>
-                <button className="btn accent-purple text-white" onClick={useSavedRules}>Use Saved Rules</button>
-              </div>
-            </div>
-          </div>
-        );
-      };
-
       // RULES SCREEN
       const RulesScreen = () => (
         <div className={`app bg-${game.color}`} style={{paddingBottom: '24px'}}>
           <div className="container">
-            <button onClick={() => setShowRules(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
+            <button onClick={() => setShowRules(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
             <div className="text-center mb-6">
               <span className="text-5xl mb-2">{game.icon}</span>
               <h1 className="text-3xl font-bold text-white">{game.name} Rules</h1>
             </div>
             <div className="card">
-              <h3 className="text-white font-semibold mb-2">📖 Overview</h3>
+              <h3 className="text-white font-semibold mb-2">ðŸ“– Overview</h3>
               <p className="text-lighter">{game.rules.overview}</p>
             </div>
             <div className="card">
@@ -1268,7 +1635,7 @@
               })}
             </div>
             <div className="card">
-              <h3 className="text-white font-semibold mb-2">🏆 Winning</h3>
+              <h3 className="text-white font-semibold mb-2">ðŸ† Winning</h3>
               <p className="text-lighter">{game.rules.winning}</p>
             </div>
             <button onClick={() => setShowRules(false)} className={`btn accent-${game.color} text-white w-full mt-4`}>Got It!</button>
@@ -1278,6 +1645,141 @@
 
       if (showRules && game) return <RulesScreen />;
 
+      // GROUP MANAGER SCREEN
+      const GroupManagerModal = () => (
+        <div className="app bg-slate" style={{paddingBottom: '24px'}}>
+          <div className="container">
+            <button onClick={() => setShowGroupManager(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
+
+            <div className="text-center mb-6">
+              <span className="text-5xl mb-2">👥</span>
+              <h1 className="text-3xl font-bold text-white">Manage Groups</h1>
+              <p className="text-light text-sm mt-1">Create and join game night groups</p>
+            </div>
+
+            {/* Active Group Section */}
+            {activeGroupData && (
+              <div className="card mb-4">
+                <div className="flex justify-between items-center mb-3">
+                  <h2 className="text-white font-semibold text-lg">{activeGroupData.name}</h2>
+                  {activeGroupData.ownerId === currentUser.uid && (
+                    <span className="badge text-xs" style={{background: 'rgba(245, 158, 11, 0.3)', color: '#fcd34d'}}>Owner</span>
+                  )}
+                </div>
+
+                <div className="mb-3">
+                  <p className="text-light text-sm mb-2">Invite Code:</p>
+                  <div className="invite-code">{activeGroupData.inviteCode}</div>
+                  <button onClick={() => copyToClipboard(activeGroupData.inviteCode)} className="btn btn-primary w-full mt-2 text-sm">
+                    📋 Copy Code
+                  </button>
+                </div>
+
+                <div className="divider"></div>
+
+                <div className="mb-3">
+                  <p className="text-light text-sm mb-2">Members ({groupMembers.length}):</p>
+                  <div className="member-list">
+                    {groupMembers.map(member => (
+                      <div key={member.userId} className="member-item">
+                        {member.photoURL ? (
+                          <img src={member.photoURL} alt={member.displayName} className="member-avatar" />
+                        ) : (
+                          <div className="member-avatar" style={{background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px'}}>
+                            {member.displayName.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="text-white text-sm">{member.displayName}</span>
+                        {activeGroupData.ownerId === currentUser.uid && member.userId !== currentUser.uid && (
+                          <button onClick={() => handleRemoveMember(member.userId)} className="remove-btn" style={{fontSize: '14px', marginLeft: '4px'}}>✕</button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <button onClick={handleLeaveGroup} disabled={groupLoading} className="btn w-full text-sm" style={{background: 'rgba(239,68,68,0.3)', color: '#fca5a5'}}>
+                  🚪 Leave Group
+                </button>
+              </div>
+            )}
+
+            {/* My Groups */}
+            {currentGroups.length > 0 && (
+              <div className="card mb-4">
+                <h2 className="text-white font-semibold mb-3">My Groups</h2>
+                {currentGroups.map(group => (
+                  <div key={group.id} className="group-card">
+                    <div>
+                      <div className="text-white font-medium">{group.name}</div>
+                      <div className="text-light text-xs">{group.memberCount} {group.memberCount === 1 ? 'member' : 'members'}</div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        switchToGroup(group.id);
+                        setShowGroupManager(false);
+                      }}
+                      className="btn btn-primary text-sm"
+                      style={{padding: '6px 12px'}}
+                      disabled={selectedGroupId === group.id}
+                    >
+                      {selectedGroupId === group.id ? 'Active' : 'Switch'}
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Create Group Form */}
+            <div className="card mb-4">
+              <h2 className="text-white font-semibold mb-3">Create New Group</h2>
+              <input
+                type="text"
+                value={createGroupName}
+                onChange={(e) => setCreateGroupName(e.target.value)}
+                placeholder="Enter group name (3-30 characters)"
+                className="input mb-3"
+                maxLength={30}
+              />
+              <button
+                onClick={handleCreateGroup}
+                disabled={groupLoading || createGroupName.trim().length < 3}
+                className="btn accent-emerald text-white w-full"
+              >
+                {groupLoading ? 'Creating...' : '✨ Create Group'}
+              </button>
+            </div>
+
+            {/* Join Group Form */}
+            <div className="card">
+              <h2 className="text-white font-semibold mb-3">Join with Code</h2>
+              <input
+                type="text"
+                value={joinGroupCode}
+                onChange={(e) => setJoinGroupCode(e.target.value.toUpperCase())}
+                placeholder="Enter 6-character code"
+                className="input mb-3"
+                maxLength={6}
+                style={{textTransform: 'uppercase', fontFamily: 'monospace', letterSpacing: '2px'}}
+              />
+              <button
+                onClick={handleJoinGroup}
+                disabled={groupLoading || joinGroupCode.length !== 6}
+                className="btn accent-blue text-white w-full"
+              >
+                {groupLoading ? 'Joining...' : '🚀 Join Group'}
+              </button>
+            </div>
+
+            <p className="text-center text-xs mt-4" style={{color: 'rgba(255,255,255,0.4)'}}>
+              Groups sync across devices • Max 20 members per group
+            </p>
+          </div>
+        </div>
+      );
+
+      if (showGroupManager) return <GroupManagerModal />;
+
       // LEADERBOARD SCREEN
       const LeaderboardScreen = () => {
         const leaderboard = getLeaderboard();
@@ -1286,7 +1788,7 @@
         return (
           <div className="app bg-slate" style={{paddingBottom: '24px'}}>
             <div className="container">
-              <button onClick={() => setShowLeaderboard(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
+              <button onClick={() => setShowLeaderboard(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
               <div className="text-center mb-6">
                 <span className="text-5xl mb-2">🏆</span>
                 <h1 className="text-3xl font-bold text-white">Wins Leaderboard</h1>
@@ -1322,7 +1824,7 @@
               )}
 
               <div className="card mt-4">
-                <h3 className="text-white font-semibold mb-3">📦 Backup & Restore</h3>
+                <h3 className="text-white font-semibold mb-3">ðŸ“¦ Backup & Restore</h3>
                 <p className="text-light text-sm mb-3">Export as CSV for Excel/Sheets, or restore from a backup file.</p>
                 <div className="flex gap-2 mb-3">
                   <button onClick={exportData} className="btn btn-primary flex-1 text-sm">â¬‡ï¸ Export</button>
@@ -1353,31 +1855,31 @@
               <div key={cat.key} className="score-item"><span className="text-white">{cat.icon} {cat.name}</span><span className="text-light">Sum of {cat.name.toLowerCase()}</span></div>
             ))}
             <div className="score-highlight mt-3">
-              <div className="flex justify-between"><span className="text-amber font-semibold">âœ¨ BONUS</span><span className="text-amber font-bold">+35 pts</span></div>
-              <p className="text-light text-xs mt-1">If upper section â‰¥ 63 (avg 3 of each)</p>
+              <div className="flex justify-between"><span className="text-amber font-semibold">✋¨ BONUS</span><span className="text-amber font-bold">+35 pts</span></div>
+              <p className="text-light text-xs mt-1">If upper section ≥ 63 (avg 3 of each)</p>
             </div>
           </div>
           <div className="card">
             <h3 className="text-white font-semibold mb-3">🎯 Lower Section</h3>
             <div className="score-item"><span className="text-white">🎲 3 of a Kind</span><span className="text-light">Sum all dice</span></div>
             <div className="score-item"><span className="text-white">🎲 4 of a Kind</span><span className="text-light">Sum all dice</span></div>
-            <div className="score-item"><span className="text-white">🏠 Full House</span><span className="text-amber font-bold">25 pts</span></div>
-            <div className="score-item"><span className="text-white">📈 Sm Straight</span><span className="text-amber font-bold">30 pts</span></div>
-            <div className="score-item"><span className="text-white">📈 Lg Straight</span><span className="text-amber font-bold">40 pts</span></div>
+            <div className="score-item"><span className="text-white">ðŸ  Full House</span><span className="text-amber font-bold">25 pts</span></div>
+            <div className="score-item"><span className="text-white">ðŸ“ˆ Sm Straight</span><span className="text-amber font-bold">30 pts</span></div>
+            <div className="score-item"><span className="text-white">ðŸ“ˆ Lg Straight</span><span className="text-amber font-bold">40 pts</span></div>
             <div className="score-item"><span className="text-white">🌟 YAHTZEE</span><span className="text-amber font-bold">50 pts</span></div>
             <div className="score-item"><span className="text-white">â“ Chance</span><span className="text-light">Sum all dice</span></div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">📈 Straights</h3>
+            <h3 className="text-white font-semibold mb-3">ðŸ“ˆ Straights</h3>
             <div className="score-highlight">
               <div className="flex justify-between mb-2"><span className="text-white font-medium">Small Straight</span><span className="text-green font-bold">30 pts</span></div>
               <p className="text-light text-sm mb-2">4 in a row (5th can be anything)</p>
-              <div className="text-xs text-light">âœ“ 1-2-3-4 &nbsp; âœ“ 2-3-4-5 &nbsp; âœ“ 3-4-5-6<br/>Example: 1-2-3-4-4 = âœ“</div>
+              <div className="text-xs text-light">✋“ 1-2-3-4 &nbsp; ✋“ 2-3-4-5 &nbsp; ✋“ 3-4-5-6<br/>Example: 1-2-3-4-4 = ✋“</div>
             </div>
             <div className="score-highlight mt-2">
               <div className="flex justify-between mb-2"><span className="text-white font-medium">Large Straight</span><span className="text-amber font-bold">40 pts</span></div>
               <p className="text-light text-sm mb-2">All 5 in sequence</p>
-              <div className="text-xs text-light">âœ“ 1-2-3-4-5 &nbsp; âœ“ 2-3-4-5-6<br/>âœ— 1-2-3-5-6 (missing 4)</div>
+              <div className="text-xs text-light">✋“ 1-2-3-4-5 &nbsp; ✋“ 2-3-4-5-6<br/>✋— 1-2-3-5-6 (missing 4)</div>
             </div>
           </div>
         </div>
@@ -1443,7 +1945,7 @@
                 </div>
                 <div className="flex gap-2">
                   <input type="text" inputMode="numeric" value={scoreInput} onChange={(e) => setScoreInput(e.target.value)} placeholder="0" className="input input-score flex-1" style={{fontSize: '20px'}} autoFocus />
-                  <button onClick={submitYahtzeeScore} className="btn accent-amber text-white">âœ“</button>
+                  <button onClick={submitYahtzeeScore} className="btn accent-amber text-white">✋“</button>
                 </div>
                 <button onClick={() => { setSelectedCategory(null); setScoreInput(''); }} className="btn btn-primary w-full mt-2 text-sm" style={{padding: '8px'}}>Cancel</button>
               </div>
@@ -1476,7 +1978,7 @@
                 const isCurrent = currentPlayer?.phase === phase.num;
                 return (
                   <div key={phase.num} className={`phase-item ${isComplete ? 'complete' : isCurrent ? 'current' : 'pending'}`}>
-                    <div className={`phase-num ${isComplete ? 'complete' : isCurrent ? 'current' : 'pending'}`}>{isComplete ? 'âœ“' : phase.num}</div>
+                    <div className={`phase-num ${isComplete ? 'complete' : isCurrent ? 'current' : 'pending'}`}>{isComplete ? '✋“' : phase.num}</div>
                     <div className="flex-1">
                       <div className={`font-medium ${isComplete ? 'text-green' : isCurrent ? 'text-amber' : 'text-light'}`}>{phase.name}</div>
                       <div className="text-xs text-light">{phase.example}</div>
@@ -1510,7 +2012,7 @@
                 </div>
                 <div className="grid gap-1" style={{gridTemplateColumns: 'repeat(10, 1fr)'}}>
                   {[...Array(10)].map((_, i) => (
-                    <div key={i} className={`phase-box ${player.phase > i + 1 ? 'complete' : player.phase === i + 1 ? 'current' : 'pending'}`}>{player.phase > i + 1 ? 'âœ“' : i + 1}</div>
+                    <div key={i} className={`phase-box ${player.phase > i + 1 ? 'complete' : player.phase === i + 1 ? 'current' : 'pending'}`}>{player.phase > i + 1 ? '✋“' : i + 1}</div>
                   ))}
                 </div>
               </div>
@@ -1521,7 +2023,7 @@
             {players.map(player => (
               <div key={player.id} className="mb-3">
                 <div className="score-entry">
-                  <div className="score-entry-name">{player.name}<span className="score-entry-phase">Phase {player.phase <= 10 ? player.phase : 'âœ“'}</span></div>
+                  <div className="score-entry-name">{player.name}<span className="score-entry-phase">Phase {player.phase <= 10 ? player.phase : '✋“'}</span></div>
                   <button onClick={() => setEditingRoundScore({playerId: player.id, value: roundScores[player.id] || ''})} 
                     className="input input-score" style={{cursor: 'pointer', minWidth: '80px'}}>
                     {roundScores[player.id] || 'â€”'}
@@ -1529,7 +2031,7 @@
                 </div>
                 {player.phase <= 10 && (
                   <button onClick={() => togglePhaseAdvance(player.id)} className={`phase-toggle ${phaseAdvance[player.id] ? 'complete' : 'incomplete'}`}>
-                    {phaseAdvance[player.id] ? `âœ“ Completed Phase ${player.phase}` : `Completed Phase ${player.phase}?`}
+                    {phaseAdvance[player.id] ? `✋“ Completed Phase ${player.phase}` : `Completed Phase ${player.phase}?`}
                   </button>
                 )}
               </div>
@@ -1581,7 +2083,7 @@
             <div className="score-item"><span className="text-white">6 of a Kind</span><span className="text-amber">8Ã— triple</span></div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">âœ¨ Special Combos</h3>
+            <h3 className="text-white font-semibold mb-3">✋¨ Special Combos</h3>
             <div className="score-item"><span className="text-white">Straight 1-6</span><span className="text-amber font-bold">1,500</span></div>
             <div className="score-item"><span className="text-white">Three Pairs</span><span className="text-amber font-bold">1,500</span></div>
             <div className="score-item"><span className="text-white">Two Triplets</span><span className="text-amber font-bold">2,500</span></div>
@@ -1669,9 +2171,9 @@
           <div className="card">
             <h3 className="text-white font-semibold mb-3">ðŸ’¡ Example 15s</h3>
             <p className="text-light text-sm mb-2">Hand: 5-5-5-J and starter: 5</p>
-            <p className="text-lighter text-sm">â€¢ Four 5s = 12 pts (6 pairs)</p>
-            <p className="text-lighter text-sm">â€¢ 5+5+5 = 15 (Ã—4 ways) = 8 pts</p>
-            <p className="text-lighter text-sm">â€¢ 5+J = 15 (Ã—4 ways) = 8 pts</p>
+            <p className="text-lighter text-sm">• Four 5s = 12 pts (6 pairs)</p>
+            <p className="text-lighter text-sm">• 5+5+5 = 15 (Ã—4 ways) = 8 pts</p>
+            <p className="text-lighter text-sm">• 5+J = 15 (Ã—4 ways) = 8 pts</p>
             <p className="text-green text-sm font-semibold mt-2">Total: 28 pts! (Max without flush)</p>
           </div>
           <div className="card score-warning">
@@ -1693,14 +2195,14 @@
             <div className="score-item"><span className="text-white">Low Joker</span><span className="text-purple font-bold">1 pt</span></div>
             <div className="score-item"><span className="text-white">10</span><span className="text-purple font-bold">1 pt</span></div>
             <div className="score-item"><span className="text-white">3</span><span className="text-amber font-bold">3 pts</span></div>
-            <div className="score-item"><span className="text-white">2 (Low)</span><span className="text-green font-bold">1 pt â†’ Holder</span></div>
+            <div className="score-item"><span className="text-white">2 (Low)</span><span className="text-green font-bold">1 pt ←’ Holder</span></div>
           </div>
           <div className="card">
             <h3 className="text-white font-semibold mb-3">🎯 13-Point (adds)</h3>
             <div className="score-item"><span className="text-white">Off-3 (same color)</span><span className="text-amber font-bold">3 pts</span></div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">📊 Trump Card Rank</h3>
+            <h3 className="text-white font-semibold mb-3">ðŸ“Š Trump Card Rank</h3>
             <p className="text-lighter text-sm" style={{lineHeight: '1.6'}}>
               A K Q J <span style={{color: '#c4b5fd'}}>Jick</span> <span style={{color: '#fbbf24'}}>Hi🃏 Lo🃏</span> 10 9 8 7 6 5 4 <span style={{color: '#fbbf24'}}>3</span> 2
             </p>
@@ -1708,13 +2210,13 @@
           </div>
           <div className="card">
             <h3 className="text-white font-semibold mb-3">🎮 Call Your Partner</h3>
-            <p className="text-lighter text-sm mb-2">â€¢ Bidder calls a trump card</p>
-            <p className="text-lighter text-sm mb-2">â€¢ Holder of card is secret partner</p>
-            <p className="text-lighter text-sm mb-2">â€¢ If card in deck â†’ bidder vs table!</p>
-            <p className="text-lighter text-sm">â€¢ Partners share points won</p>
+            <p className="text-lighter text-sm mb-2">• Bidder calls a trump card</p>
+            <p className="text-lighter text-sm mb-2">• Holder of card is secret partner</p>
+            <p className="text-lighter text-sm mb-2">• If card in deck ←’ bidder vs table!</p>
+            <p className="text-lighter text-sm">• Partners share points won</p>
           </div>
           <div className="card score-warning">
-            <h3 className="text-amber font-semibold mb-2">ðŸŒ™ Shoot the Moon</h3>
+            <h3 className="text-amber font-semibold mb-2">🌙 Shoot the Moon</h3>
             <p className="text-light text-sm">Bid to take ALL points. High risk, high reward!</p>
           </div>
         </div>
@@ -1874,7 +2376,7 @@
           })));
           setEditingCribbage(null);
         };
-
+        
 
         return (
           <div className="cribbage-layout">
@@ -1954,7 +2456,7 @@
                     </div>
                   </div>
 
-                  <div style={{display: 'flex', gap: '12px', marginBottom: '16px'}}>
+                  <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
                     <div style={{flex: 1, background: 'rgba(220,38,38,0.15)', borderRadius: '12px', padding: '12px'}}>
                       <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔴 {p1?.name}</div>
                       <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
@@ -1980,23 +2482,8 @@
                   </div>
 
                   <button onClick={confirmPeg} disabled={cribbageCurrentRound.player1Peg === 0 && cribbageCurrentRound.player2Peg === 0}
-                    style={{
-                      width: '100%',
-                      padding: '18px 16px',
-                      marginTop: '8px',
-                      background: (cribbageCurrentRound.player1Peg === 0 && cribbageCurrentRound.player2Peg === 0) ? '#6b7280' : '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '12px',
-                      fontSize: '20px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      cursor: 'pointer',
-                      boxShadow: (cribbageCurrentRound.player1Peg === 0 && cribbageCurrentRound.player2Peg === 0) ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.4)',
-                      transition: 'all 0.2s'
-                    }}>
-                    ✅ Confirm Pegging
+                    style={{width: '100%', padding: '12px', background: '#047857', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', opacity: (cribbageCurrentRound.player1Peg === 0 && cribbageCurrentRound.player2Peg === 0) ? 0.5 : 1}}>
+                    ✓ Confirm Pegging
                   </button>
                 </div>
               )}
@@ -2016,7 +2503,7 @@
                     </div>
                   </div>
 
-                  <div style={{display: 'flex', gap: '12px', marginBottom: '16px'}}>
+                  <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
                     <div style={{flex: 1, background: 'rgba(220,38,38,0.15)', borderRadius: '12px', padding: '12px'}}>
                       <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔴 {p1?.name}</div>
                       <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
@@ -2042,23 +2529,8 @@
                   </div>
 
                   <button onClick={confirmShow} disabled={cribbageCurrentRound.player1Show === 0 && cribbageCurrentRound.player2Show === 0}
-                    style={{
-                      width: '100%',
-                      padding: '18px 16px',
-                      marginTop: '8px',
-                      background: (cribbageCurrentRound.player1Show === 0 && cribbageCurrentRound.player2Show === 0) ? '#6b7280' : '#10b981',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '12px',
-                      fontSize: '20px',
-                      fontWeight: '700',
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.5px',
-                      cursor: 'pointer',
-                      boxShadow: (cribbageCurrentRound.player1Show === 0 && cribbageCurrentRound.player2Show === 0) ? 'none' : '0 4px 12px rgba(16, 185, 129, 0.4)',
-                      transition: 'all 0.2s'
-                    }}>
-                    ✅ Confirm Show & Complete Round
+                    style={{width: '100%', padding: '12px', background: '#047857', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', opacity: (cribbageCurrentRound.player1Show === 0 && cribbageCurrentRound.player2Show === 0) ? 0.5 : 1}}>
+                    ✓ Confirm Show & Complete Round
                   </button>
                 </div>
               )}
@@ -2137,7 +2609,6 @@
         );
       };
 
-
       // PITCH GAME
       const PitchGame = () => {
         const POINT_SYSTEMS = {
@@ -2179,7 +2650,7 @@
                       style={{padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                         background: pitchConfig.gameMode === 'teams' ? '#7c3aed' : 'rgba(255,255,255,0.2)',
                         color: 'white', fontWeight: '600', fontSize: '14px'}}>
-                      👥 Teams
+                      ðŸ‘¥ Teams
                     </button>
                     <button onClick={() => setPitchConfig({...pitchConfig, gameMode: 'callPartner'})}
                       style={{padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -2217,7 +2688,7 @@
                 </div>
                 
                 <div style={{marginBottom: '16px'}}>
-                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>ðŸŒ™ Shoot the Moon - Success</label>
+                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>🌙 Shoot the Moon - Success</label>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px'}}>
                     <button onClick={() => setPitchConfig({...pitchConfig, moonReward: 'double'})}
                       style={{padding: '10px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -2254,12 +2725,12 @@
                     </div>
                   )}
                   {pitchConfig.moonReward === 'autoWin' && (
-                    <p style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginTop: '4px'}}>If negative â†’ resets to 0</p>
+                    <p style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px', marginTop: '4px'}}>If negative ←’ resets to 0</p>
                   )}
                 </div>
                 
                 <div style={{marginBottom: '16px'}}>
-                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>ðŸŒ™ Shoot the Moon - Miss</label>
+                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>🌙 Shoot the Moon - Miss</label>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px'}}>
                     <button onClick={() => setPitchConfig({...pitchConfig, moonPenalty: 'set'})}
                       style={{padding: '10px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -2296,36 +2767,22 @@
                     </div>
                   )}
                 </div>
-
-                <div style={{display: 'flex', gap: '8px', marginTop: '8px'}}>
-                  {currentUser && (
-                    <button onClick={async () => {
-                      await savePitchHouseRules(pitchConfig, currentUser);
-                      alert('House rules saved! 🏠');
-                    }}
-                      style={{flex: 1, padding: '14px', borderRadius: '12px', border: '2px solid #7c3aed', cursor: 'pointer',
-                        background: 'transparent', color: '#c4b5fd', fontWeight: '600', fontSize: '14px'}}>
-                      💾 Save as House Rules
-                    </button>
-                  )}
-                  <button onClick={() => setPitchSetupDone(true)}
-                    style={{flex: currentUser ? 1 : 'auto', width: currentUser ? 'auto' : '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                      background: '#7c3aed', color: 'white', fontWeight: '600', fontSize: '16px'}}>
-                    Start Game
-                  </button>
-                </div>
+                
+                <button onClick={() => setPitchSetupDone(true)}
+                  style={{width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                    background: '#7c3aed', color: 'white', fontWeight: '600', fontSize: '16px', marginTop: '8px'}}>
+                  Start Game
+                </button>
               </div>
             </div>
           );
         }
         
-        // For teams mode - calculate scores and names based on team assignments
-        const team1Players = pitchConfig.gameMode === 'teams' ? players.filter(p => p.team === 1) : [];
-        const team2Players = pitchConfig.gameMode === 'teams' ? players.filter(p => p.team === 2) : [];
-        const team1Score = pitchConfig.gameMode === 'teams' ? (team1Players[0]?.total || 0) : 0;
-        const team2Score = pitchConfig.gameMode === 'teams' ? (team2Players[0]?.total || 0) : 0;
-        const team1Names = pitchConfig.gameMode === 'teams' ? team1Players.map(p => p.name).join(' & ') : '';
-        const team2Names = pitchConfig.gameMode === 'teams' ? team2Players.map(p => p.name).join(' & ') : '';
+        // For teams mode - use player 0 for team 1 score, player 1 for team 2 score
+        const team1Score = pitchConfig.gameMode === 'teams' ? (players[0]?.total || 0) : 0;
+        const team2Score = pitchConfig.gameMode === 'teams' ? (players[1]?.total || 0) : 0;
+        const team1Names = pitchConfig.gameMode === 'teams' ? [players[0], players[2]].filter(Boolean).map(p => p.name).join(' & ') : '';
+        const team2Names = pitchConfig.gameMode === 'teams' ? [players[1], players[3]].filter(Boolean).map(p => p.name).join(' & ') : '';
         
         return (
           <div>
@@ -2423,7 +2880,7 @@
                       style={{padding: '8px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                         background: pitchHand.isMoon ? '#fbbf24' : 'rgba(255,255,255,0.15)',
                         color: pitchHand.isMoon ? 'black' : 'white', fontSize: '14px', fontWeight: '600'}}>
-                      ðŸŒ™ Moon
+                      🌙 Moon
                     </button>
                   </div>
                 </div>
@@ -2476,9 +2933,9 @@
                   {pitchHand.pointsWon !== undefined && (
                     <p style={{marginTop: '8px', color: (pitchHand.isMoon ? pitchHand.pointsWon === pointSys.total : pitchHand.pointsWon >= pitchHand.bidAmount) ? '#86efac' : '#fca5a5', fontSize: '13px', fontWeight: '600'}}>
                       {pitchHand.isMoon ? (
-                        pitchHand.pointsWon === pointSys.total ? 'ðŸŒ™ Moon made!' : 'ðŸŒ™ Moon missed!'
+                        pitchHand.pointsWon === pointSys.total ? '🌙 Moon made!' : '🌙 Moon missed!'
                       ) : (
-                        pitchHand.pointsWon >= pitchHand.bidAmount ? 'âœ“ Made bid!' : 'âœ— Set!'
+                        pitchHand.pointsWon >= pitchHand.bidAmount ? '✋“ Made bid!' : '✋— Set!'
                       )}
                     </p>
                   )}
@@ -2496,11 +2953,10 @@
                   let newPlayers = [...players];
                   
                   if (pitchConfig.gameMode === 'teams') {
-                    // Teams: use first player in each team to hold team score
-                    const bidder = players[pitchHand.bidderIndex];
-                    const bidderTeamNum = bidder.team;
-                    const bidderScoreIdx = team1Players[0] && bidderTeamNum === 1 ? players.indexOf(team1Players[0]) : players.indexOf(team2Players[0]);
-                    const otherScoreIdx = bidderTeamNum === 1 ? players.indexOf(team2Players[0]) : players.indexOf(team1Players[0]);
+                    // Teams: player 0 holds team 1 score, player 1 holds team 2 score
+                    const bidderTeam1 = pitchHand.bidderIndex === 0 || pitchHand.bidderIndex === 2;
+                    const bidderScoreIdx = bidderTeam1 ? 0 : 1;
+                    const otherScoreIdx = bidderTeam1 ? 1 : 0;
                     
                     if (isMoon) {
                       if (made) {
@@ -2710,6 +3166,25 @@
               </div>
             )}
 
+            {/* Group Selector */}
+            {firebaseConfigured && currentUser && (
+              <div className="mb-4">
+                <select
+                  value={selectedGroupId || ''}
+                  onChange={(e) => switchToGroup(e.target.value)}
+                  className="input group-selector w-full"
+                  style={{fontSize: '14px', padding: '10px 12px'}}
+                >
+                  <option value="">No Group Selected</option>
+                  {currentGroups.map(group => (
+                    <option key={group.id} value={group.id}>
+                      {group.name} ({group.memberCount} {group.memberCount === 1 ? 'member' : 'members'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="text-center mb-8 pt-8">
               <h1 className="text-4xl font-bold text-white mb-2"><img src="./icon-192.png" alt="" style={{width: '40px', height: '40px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', borderRadius: '8px'}} />Game Night</h1>
               <p className="text-light mb-1">Score Keeper</p>
@@ -2719,7 +3194,21 @@
                 <p className="text-xs mt-2" style={{color: '#22c55e'}}>☁️ Signed in - Ready for cloud sync</p>
               )}
             </div>
-            
+
+            {/* Manage Groups Button */}
+            {firebaseConfigured && currentUser && (
+              <button onClick={() => setShowGroupManager(true)} className="w-full mb-4" style={{background: 'linear-gradient(135deg, #581c87 0%, #7c3aed 100%)', border: 'none', borderRadius: '16px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+                <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
+                  <span style={{fontSize: '32px'}}>👥</span>
+                  <div style={{textAlign: 'left'}}>
+                    <div style={{color: 'white', fontSize: '18px', fontWeight: 'bold'}}>Manage Groups</div>
+                    <div style={{color: 'rgba(255,255,255,0.8)', fontSize: '13px'}}>Create, join, and switch groups</div>
+                  </div>
+                </div>
+                <span style={{color: 'rgba(255,255,255,0.5)', fontSize: '24px'}}>→</span>
+              </button>
+            )}
+
             <button onClick={() => setShowLeaderboard(true)} className="w-full mb-6" style={{background: 'linear-gradient(135deg, #78350f 0%, #d97706 100%)', border: 'none', borderRadius: '16px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
               <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
                 <span style={{fontSize: '32px'}}>🏆</span>
@@ -2737,13 +3226,13 @@
                     <span className="game-icon">{g.icon}</span>
                     <div><h2 className="text-xl font-bold text-white">{g.name}</h2><p className="text-lighter text-sm">{g.description}</p></div>
                   </button>
-                  <button onClick={() => { setSelectedGame(key); setShowRules(true); }} className="rules-btn">📖</button>
+                  <button onClick={() => { setSelectedGame(key); setShowRules(true); }} className="rules-btn">ðŸ“–</button>
                 </div>
               ))}
             </div>
-            <p className="text-center text-light text-sm mt-8">📱 Add to home screen for offline use!</p>
+            <p className="text-center text-light text-sm mt-8">ðŸ“± Add to home screen for offline use!</p>
             {firebaseConfigured && !currentUser && !authLoading && (
-              <p className="text-center text-xs mt-2" style={{color: '#22c55e'}}>☁️ Cloud sync available - Sign in to enable</p>
+              <p className="text-center text-xs mt-2" style={{color: '#22c55e'}}>☁️ Sign in to unlock player groups and cloud sync</p>
             )}
             <p className="text-center text-xs mt-4" style={{color: 'rgba(255,255,255,0.4)', lineHeight: '1.4'}}>
               YahtzeeÂ® is a trademark of Hasbro. Phase 10Â® is a trademark of Mattel.<br/>
@@ -2757,8 +3246,8 @@
         <div className={`app bg-${game.color}`} style={{paddingBottom: '24px'}}>
           <div className="container">
             <div className="flex justify-between items-center mb-4">
-              <button onClick={confirmGoHome} className="text-white" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
-              <button onClick={() => setShowRules(true)} className="rules-btn">📖 Rules</button>
+              <button onClick={confirmGoHome} className="text-white" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
+              <button onClick={() => setShowRules(true)} className="rules-btn">ðŸ“– Rules</button>
             </div>
             <div className="text-center mb-6">
               <span className="text-5xl mb-2">{game.icon}</span>
@@ -2769,7 +3258,7 @@
             {/* Saved Players */}
             {savedPlayersList.length > 0 && (
               <div className="card mb-4">
-                <h2 className="text-lg font-semibold text-white mb-3">👥 Saved Players</h2>
+                <h2 className="text-lg font-semibold text-white mb-3">ðŸ‘¥ Saved Players</h2>
                 <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
                   {savedPlayersList.map(name => {
                     const inGame = players.find(p => p.name === name);
@@ -2781,7 +3270,7 @@
                           color: inGame ? '#86efac' : 'white', fontSize: '14px', fontWeight: '500',
                           display: 'flex', alignItems: 'center', gap: '6px'
                         }}>
-                        {inGame && <span>âœ“</span>}
+                        {inGame && <span>✋“</span>}
                         {name}
                       </button>
                     );
@@ -2793,26 +3282,7 @@
             
             {/* Add New Player */}
             <div className="card">
-              <h2 className="text-lg font-semibold text-white mb-3">âž• Add Player</h2>
-              {selectedGame === 'pitch' && pitchConfig.gameMode === 'teams' && (
-                <div style={{marginBottom: '12px'}}>
-                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>Select Team</label>
-                  <div style={{display: 'flex', gap: '8px'}}>
-                    <button onClick={() => setPlayerTeamSelection(1)}
-                      style={{flex: 1, padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                        background: playerTeamSelection === 1 ? '#7c3aed' : 'rgba(255,255,255,0.2)',
-                        color: 'white', fontWeight: '600', fontSize: '14px'}}>
-                      Team 1
-                    </button>
-                    <button onClick={() => setPlayerTeamSelection(2)}
-                      style={{flex: 1, padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                        background: playerTeamSelection === 2 ? '#ec4899' : 'rgba(255,255,255,0.2)',
-                        color: 'white', fontWeight: '600', fontSize: '14px'}}>
-                      Team 2
-                    </button>
-                  </div>
-                </div>
-              )}
+              <h2 className="text-lg font-semibold text-white mb-3">➕ Add Player</h2>
               <div className="flex gap-2 mb-3">
                 <input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addPlayer()} placeholder="Enter name" className="input flex-1" maxLength={15} />
                 <button onClick={addPlayer} disabled={!newPlayerName.trim() || players.length >= game.maxPlayers} className={`btn accent-${game.color} text-white`}>Add</button>
@@ -2832,20 +3302,10 @@
               ) : (
                 players.map((player, i) => (
                   <div key={player.id} className="player-item">
-                    <span className="text-white">
-                      <span className="text-light mr-2">{i + 1}.</span>
-                      {player.name}
-                      {selectedGame === 'pitch' && pitchConfig.gameMode === 'teams' && player.team && (
-                        <span style={{
-                          marginLeft: '8px', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
-                          background: player.team === 1 ? '#7c3aed' : '#ec4899',
-                          color: 'white'
-                        }}>
-                          Team {player.team}
-                        </span>
-                      )}
-                    </span>
-                    <button onClick={() => removePlayer(player.id)} className="remove-btn">âœ•</button>
+                    <span className="text-white"><span className="text-light mr-2">{i + 1}.</span>{player.name}</span>
+                    <button onClick={() => removePlayer(player.id)} className="remove-btn">✋•</button>
+                  </div>
+                ))
               )}
               <p className="text-lighter text-sm mt-3 text-center">{players.length < game.minPlayers ? `Add at least ${game.minPlayers} players` : `${players.length}/${game.maxPlayers} players`}</p>
             </div>
@@ -2914,7 +3374,7 @@
             <div className="flex items-center justify-between mb-4 pt-4">
               <div className="flex items-center gap-2"><span className="text-2xl">{game.icon}</span><h1 className="text-2xl font-bold text-white">{game.name}</h1></div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setShowRules(true)} className="rules-btn">📖</button>
+                <button onClick={() => setShowRules(true)} className="rules-btn">ðŸ“–</button>
                 <span className="badge">Rd {currentRound}</span>
               </div>
             </div>
@@ -2937,7 +3397,6 @@
           {editingScore && <EditScoreModal />}
           {editingYahtzee && <EditYahtzeeModal />}
           {editingCribbage && <EditCribbageModal />}
-          {showHouseRulesPopup && <HouseRulesPopup />}
           {editingPitch && <EditPitchModal />}
           {editingRoundScore && <RoundScoreModal />}
         </div>

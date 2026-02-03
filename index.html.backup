@@ -886,17 +886,8 @@
 
       const removePlayer = (id) => setPlayers(players.filter(p => p.id !== id));
 
-      const startGame = async () => {
+      const startGame = () => {
         if (players.length >= (game?.minPlayers || 2)) {
-          // For Pitch, check for saved house rules
-          if (selectedGame === 'pitch') {
-            const savedRules = await loadPitchHouseRules(currentUser);
-            if (savedRules) {
-              setSavedHouseRules(savedRules);
-              setShowHouseRulesPopup(true);
-              return; // Don't start game yet - wait for user to choose
-            }
-          }
           setScreen('game'); setCurrentRound(1); setCurrentPlayerIndex(0); setActiveTab('scorecard');
           const init = {}; const initPhase = {};
           players.forEach(p => { init[p.id] = ''; initPhase[p.id] = false; });
@@ -1173,48 +1164,6 @@
               <div className="modal-buttons">
                 <button className="btn btn-cancel" onClick={() => setEditingPitch(null)}>Cancel</button>
                 <button className="btn accent-purple text-white" onClick={savePitchEdit}>Save</button>
-              </div>
-            </div>
-          </div>
-        );
-      };
-
-      const HouseRulesPopup = () => {
-        if (!showHouseRulesPopup || !savedHouseRules) return null;
-
-        const useSavedRules = () => {
-          setPitchConfig(savedHouseRules);
-          setShowHouseRulesPopup(false);
-          setScreen('game'); setCurrentRound(1); setCurrentPlayerIndex(0); setActiveTab('scorecard');
-          const init = {}; const initPhase = {};
-          players.forEach(p => { init[p.id] = ''; initPhase[p.id] = false; });
-          setRoundScores(init); setPhaseAdvance(initPhase);
-        };
-
-        const setNewRules = () => {
-          setShowHouseRulesPopup(false);
-          setScreen('game'); setCurrentRound(1); setCurrentPlayerIndex(0); setActiveTab('scorecard');
-          const init = {}; const initPhase = {};
-          players.forEach(p => { init[p.id] = ''; initPhase[p.id] = false; });
-          setRoundScores(init); setPhaseAdvance(initPhase);
-        };
-
-        return (
-          <div className="modal-overlay">
-            <div className="modal">
-              <div className="modal-title">🏠 House Rules Found</div>
-              <div className="modal-text" style={{marginBottom: '16px'}}>
-                You have saved house rules. Would you like to use them?
-              </div>
-              <div style={{background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '13px', color: 'rgba(255,255,255,0.9)'}}>
-                <div>• Point System: <strong>{savedHouseRules.pointSystem}-Point</strong></div>
-                <div>• Target Score: <strong>{savedHouseRules.customTarget || savedHouseRules.targetScore}</strong></div>
-                <div>• Moon Success: <strong>{savedHouseRules.moonReward === 'double' ? 'Double Points' : savedHouseRules.moonReward === 'autoWin' ? 'Auto-Win' : savedHouseRules.moonReward === 'fixed' ? `+${savedHouseRules.moonRewardValue} pts` : `Go to ${savedHouseRules.moonRewardValue}`}</strong></div>
-                <div>• Moon Miss: <strong>{savedHouseRules.moonPenalty === 'set' ? 'Lose Bid' : savedHouseRules.moonPenalty === 'fixed' ? `-${savedHouseRules.moonPenaltyValue} pts` : savedHouseRules.moonPenalty === 'zero' ? 'Go to Zero' : 'Lose Game'}</strong></div>
-              </div>
-              <div className="modal-buttons">
-                <button className="btn btn-cancel" onClick={setNewRules}>Set New Rules</button>
-                <button className="btn accent-purple text-white" onClick={useSavedRules}>Use Saved Rules</button>
               </div>
             </div>
           </div>
@@ -2296,36 +2245,22 @@
                     </div>
                   )}
                 </div>
-
-                <div style={{display: 'flex', gap: '8px', marginTop: '8px'}}>
-                  {currentUser && (
-                    <button onClick={async () => {
-                      await savePitchHouseRules(pitchConfig, currentUser);
-                      alert('House rules saved! 🏠');
-                    }}
-                      style={{flex: 1, padding: '14px', borderRadius: '12px', border: '2px solid #7c3aed', cursor: 'pointer',
-                        background: 'transparent', color: '#c4b5fd', fontWeight: '600', fontSize: '14px'}}>
-                      💾 Save as House Rules
-                    </button>
-                  )}
-                  <button onClick={() => setPitchSetupDone(true)}
-                    style={{flex: currentUser ? 1 : 'auto', width: currentUser ? 'auto' : '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
-                      background: '#7c3aed', color: 'white', fontWeight: '600', fontSize: '16px'}}>
-                    Start Game
-                  </button>
-                </div>
+                
+                <button onClick={() => setPitchSetupDone(true)}
+                  style={{width: '100%', padding: '14px', borderRadius: '12px', border: 'none', cursor: 'pointer',
+                    background: '#7c3aed', color: 'white', fontWeight: '600', fontSize: '16px', marginTop: '8px'}}>
+                  Start Game
+                </button>
               </div>
             </div>
           );
         }
         
-        // For teams mode - calculate scores and names based on team assignments
-        const team1Players = pitchConfig.gameMode === 'teams' ? players.filter(p => p.team === 1) : [];
-        const team2Players = pitchConfig.gameMode === 'teams' ? players.filter(p => p.team === 2) : [];
-        const team1Score = pitchConfig.gameMode === 'teams' ? (team1Players[0]?.total || 0) : 0;
-        const team2Score = pitchConfig.gameMode === 'teams' ? (team2Players[0]?.total || 0) : 0;
-        const team1Names = pitchConfig.gameMode === 'teams' ? team1Players.map(p => p.name).join(' & ') : '';
-        const team2Names = pitchConfig.gameMode === 'teams' ? team2Players.map(p => p.name).join(' & ') : '';
+        // For teams mode - use player 0 for team 1 score, player 1 for team 2 score
+        const team1Score = pitchConfig.gameMode === 'teams' ? (players[0]?.total || 0) : 0;
+        const team2Score = pitchConfig.gameMode === 'teams' ? (players[1]?.total || 0) : 0;
+        const team1Names = pitchConfig.gameMode === 'teams' ? [players[0], players[2]].filter(Boolean).map(p => p.name).join(' & ') : '';
+        const team2Names = pitchConfig.gameMode === 'teams' ? [players[1], players[3]].filter(Boolean).map(p => p.name).join(' & ') : '';
         
         return (
           <div>
@@ -2496,11 +2431,10 @@
                   let newPlayers = [...players];
                   
                   if (pitchConfig.gameMode === 'teams') {
-                    // Teams: use first player in each team to hold team score
-                    const bidder = players[pitchHand.bidderIndex];
-                    const bidderTeamNum = bidder.team;
-                    const bidderScoreIdx = team1Players[0] && bidderTeamNum === 1 ? players.indexOf(team1Players[0]) : players.indexOf(team2Players[0]);
-                    const otherScoreIdx = bidderTeamNum === 1 ? players.indexOf(team2Players[0]) : players.indexOf(team1Players[0]);
+                    // Teams: player 0 holds team 1 score, player 1 holds team 2 score
+                    const bidderTeam1 = pitchHand.bidderIndex === 0 || pitchHand.bidderIndex === 2;
+                    const bidderScoreIdx = bidderTeam1 ? 0 : 1;
+                    const otherScoreIdx = bidderTeam1 ? 1 : 0;
                     
                     if (isMoon) {
                       if (made) {
@@ -2794,25 +2728,6 @@
             {/* Add New Player */}
             <div className="card">
               <h2 className="text-lg font-semibold text-white mb-3">âž• Add Player</h2>
-              {selectedGame === 'pitch' && pitchConfig.gameMode === 'teams' && (
-                <div style={{marginBottom: '12px'}}>
-                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>Select Team</label>
-                  <div style={{display: 'flex', gap: '8px'}}>
-                    <button onClick={() => setPlayerTeamSelection(1)}
-                      style={{flex: 1, padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                        background: playerTeamSelection === 1 ? '#7c3aed' : 'rgba(255,255,255,0.2)',
-                        color: 'white', fontWeight: '600', fontSize: '14px'}}>
-                      Team 1
-                    </button>
-                    <button onClick={() => setPlayerTeamSelection(2)}
-                      style={{flex: 1, padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
-                        background: playerTeamSelection === 2 ? '#ec4899' : 'rgba(255,255,255,0.2)',
-                        color: 'white', fontWeight: '600', fontSize: '14px'}}>
-                      Team 2
-                    </button>
-                  </div>
-                </div>
-              )}
               <div className="flex gap-2 mb-3">
                 <input type="text" value={newPlayerName} onChange={(e) => setNewPlayerName(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && addPlayer()} placeholder="Enter name" className="input flex-1" maxLength={15} />
                 <button onClick={addPlayer} disabled={!newPlayerName.trim() || players.length >= game.maxPlayers} className={`btn accent-${game.color} text-white`}>Add</button>
@@ -2832,20 +2747,10 @@
               ) : (
                 players.map((player, i) => (
                   <div key={player.id} className="player-item">
-                    <span className="text-white">
-                      <span className="text-light mr-2">{i + 1}.</span>
-                      {player.name}
-                      {selectedGame === 'pitch' && pitchConfig.gameMode === 'teams' && player.team && (
-                        <span style={{
-                          marginLeft: '8px', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
-                          background: player.team === 1 ? '#7c3aed' : '#ec4899',
-                          color: 'white'
-                        }}>
-                          Team {player.team}
-                        </span>
-                      )}
-                    </span>
+                    <span className="text-white"><span className="text-light mr-2">{i + 1}.</span>{player.name}</span>
                     <button onClick={() => removePlayer(player.id)} className="remove-btn">âœ•</button>
+                  </div>
+                ))
               )}
               <p className="text-lighter text-sm mt-3 text-center">{players.length < game.minPlayers ? `Add at least ${game.minPlayers} players` : `${players.length}/${game.maxPlayers} players`}</p>
             </div>
@@ -2937,7 +2842,6 @@
           {editingScore && <EditScoreModal />}
           {editingYahtzee && <EditYahtzeeModal />}
           {editingCribbage && <EditCribbageModal />}
-          {showHouseRulesPopup && <HouseRulesPopup />}
           {editingPitch && <EditPitchModal />}
           {editingRoundScore && <RoundScoreModal />}
         </div>
