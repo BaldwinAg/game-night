@@ -610,6 +610,16 @@
       const [editingRoundScore, setEditingRoundScore] = useState(null);
       const [editingYahtzee, setEditingYahtzee] = useState(null);
       const [editingCribbage, setEditingCribbage] = useState(null);
+      const [cribbageRounds, setCribbageRounds] = useState([]); // History of completed rounds
+      const [cribbageCurrentRound, setCribbageCurrentRound] = useState({
+        phase: 'peg', // 'peg' or 'show'
+        player1Peg: 0,
+        player2Peg: 0,
+        player1Show: 0,
+        player2Show: 0,
+        pegConfirmed: false,
+        showConfirmed: false
+      });
       const [showRules, setShowRules] = useState(false);
       
       // Pitch-specific state
@@ -1413,6 +1423,97 @@
 
       const EditCribbageModal = () => {
         if (!editingCribbage) return null;
+
+        // Handle round editing
+        if (editingCribbage.type === 'round') {
+          const round = cribbageRounds[editingCribbage.roundIndex];
+          const saveRoundEdit = () => {
+            const newP1Peg = Math.max(0, parseInt(editingCribbage.player1Peg) || 0);
+            const newP2Peg = Math.max(0, parseInt(editingCribbage.player2Peg) || 0);
+            const newP1Show = Math.max(0, parseInt(editingCribbage.player1Show) || 0);
+            const newP2Show = Math.max(0, parseInt(editingCribbage.player2Show) || 0);
+
+            // Recalculate totals from scratch
+            let runningP1 = 0;
+            let runningP2 = 0;
+            const updatedRounds = cribbageRounds.map((r, i) => {
+              if (i === editingCribbage.roundIndex) {
+                runningP1 += newP1Peg + newP1Show;
+                runningP2 += newP2Peg + newP2Show;
+                return {
+                  ...r,
+                  player1Peg: newP1Peg,
+                  player2Peg: newP2Peg,
+                  player1Show: newP1Show,
+                  player2Show: newP2Show,
+                  total1: runningP1,
+                  total2: runningP2
+                };
+              } else {
+                runningP1 += r.player1Peg + r.player1Show;
+                runningP2 += r.player2Peg + r.player2Show;
+                return {...r, total1: runningP1, total2: runningP2};
+              }
+            });
+
+            setCribbageRounds(updatedRounds);
+            setPlayers(players.map((p, i) => ({
+              ...p,
+              total: i === 0 ? runningP1 : runningP2
+            })));
+            setEditingCribbage(null);
+          };
+
+          return (
+            <div className="modal-overlay">
+              <div className="modal">
+                <div className="modal-title">Edit Round {round.roundNumber}</div>
+                <div style={{marginBottom: '16px'}}>
+                  <div style={{marginBottom: '12px'}}>
+                    <div style={{color: '#fca5a5', fontSize: '13px', marginBottom: '4px'}}>🔴 {players[0]?.name}</div>
+                    <div style={{display: 'flex', gap: '8px', marginBottom: '4px'}}>
+                      <div style={{flex: 1}}>
+                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Peg</label>
+                        <input type="text" inputMode="numeric" className="input text-center"
+                          value={editingCribbage.player1Peg}
+                          onChange={(e) => setEditingCribbage({...editingCribbage, player1Peg: e.target.value})} />
+                      </div>
+                      <div style={{flex: 1}}>
+                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Show</label>
+                        <input type="text" inputMode="numeric" className="input text-center"
+                          value={editingCribbage.player1Show}
+                          onChange={(e) => setEditingCribbage({...editingCribbage, player1Show: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{color: '#93c5fd', fontSize: '13px', marginBottom: '4px'}}>🔵 {players[1]?.name}</div>
+                    <div style={{display: 'flex', gap: '8px'}}>
+                      <div style={{flex: 1}}>
+                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Peg</label>
+                        <input type="text" inputMode="numeric" className="input text-center"
+                          value={editingCribbage.player2Peg}
+                          onChange={(e) => setEditingCribbage({...editingCribbage, player2Peg: e.target.value})} />
+                      </div>
+                      <div style={{flex: 1}}>
+                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Show</label>
+                        <input type="text" inputMode="numeric" className="input text-center"
+                          value={editingCribbage.player2Show}
+                          onChange={(e) => setEditingCribbage({...editingCribbage, player2Show: e.target.value})} />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-buttons">
+                  <button className="btn btn-cancel" onClick={() => setEditingCribbage(null)}>Cancel</button>
+                  <button className="btn accent-emerald text-white" onClick={saveRoundEdit}>Save</button>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
+        // Handle legacy player total editing (not used in new UI, but keep for compatibility)
         const player = players[editingCribbage.playerIndex];
         const saveCribbageEdit = () => {
           const newTotal = Math.max(0, Math.min(121, parseInt(editingCribbage.value) || 0));
@@ -2128,7 +2229,7 @@
           if (score <= 90) return 3;
           return 4;
         };
-        
+
         const getStreetProgress = (score, street) => {
           const streetStart = (street - 1) * 30;
           const streetEnd = street * 30;
@@ -2139,25 +2240,159 @@
 
         const p1 = players[0];
         const p2 = players[1];
+
+        // Add points to current round (peg or show phase)
+        const addPoints = (playerIndex, points) => {
+          const isP1 = playerIndex === 0;
+          if (cribbageCurrentRound.phase === 'peg' && !cribbageCurrentRound.pegConfirmed) {
+            setCribbageCurrentRound({
+              ...cribbageCurrentRound,
+              [isP1 ? 'player1Peg' : 'player2Peg']: cribbageCurrentRound[isP1 ? 'player1Peg' : 'player2Peg'] + points
+            });
+          } else if (cribbageCurrentRound.phase === 'show' && !cribbageCurrentRound.showConfirmed) {
+            setCribbageCurrentRound({
+              ...cribbageCurrentRound,
+              [isP1 ? 'player1Show' : 'player2Show']: cribbageCurrentRound[isP1 ? 'player1Show' : 'player2Show'] + points
+            });
+          }
+        };
+
+        // Confirm peg phase
+        const confirmPeg = () => {
+          const newP1Total = p1.total + cribbageCurrentRound.player1Peg;
+          const newP2Total = p2.total + cribbageCurrentRound.player2Peg;
+
+          setPlayers(players.map((p, i) => ({
+            ...p,
+            total: i === 0 ? newP1Total : newP2Total
+          })));
+
+          setCribbageCurrentRound({
+            ...cribbageCurrentRound,
+            phase: 'show',
+            pegConfirmed: true
+          });
+
+          // Check for winner
+          if (newP1Total >= 121) {
+            setWinner({...p1, total: newP1Total});
+            setScreen('winner');
+          } else if (newP2Total >= 121) {
+            setWinner({...p2, total: newP2Total});
+            setScreen('winner');
+          }
+        };
+
+        // Confirm show phase and complete round
+        const confirmShow = () => {
+          const newP1Total = p1.total + cribbageCurrentRound.player1Show;
+          const newP2Total = p2.total + cribbageCurrentRound.player2Show;
+
+          setPlayers(players.map((p, i) => ({
+            ...p,
+            total: i === 0 ? newP1Total : newP2Total
+          })));
+
+          // Save round to history
+          setCribbageRounds([...cribbageRounds, {
+            roundNumber: cribbageRounds.length + 1,
+            player1Peg: cribbageCurrentRound.player1Peg,
+            player2Peg: cribbageCurrentRound.player2Peg,
+            player1Show: cribbageCurrentRound.player1Show,
+            player2Show: cribbageCurrentRound.player2Show,
+            total1: newP1Total,
+            total2: newP2Total
+          }]);
+
+          // Reset for next round
+          setCribbageCurrentRound({
+            phase: 'peg',
+            player1Peg: 0,
+            player2Peg: 0,
+            player1Show: 0,
+            player2Show: 0,
+            pegConfirmed: false,
+            showConfirmed: false
+          });
+
+          // Check for winner
+          if (newP1Total >= 121) {
+            setWinner({...p1, total: newP1Total});
+            setScreen('winner');
+          } else if (newP2Total >= 121) {
+            setWinner({...p2, total: newP2Total});
+            setScreen('winner');
+          }
+        };
+
+        // Edit round from history
+        const editRound = (roundIndex) => {
+          const round = cribbageRounds[roundIndex];
+          setEditingCribbage({
+            type: 'round',
+            roundIndex,
+            player1Peg: String(round.player1Peg),
+            player2Peg: String(round.player2Peg),
+            player1Show: String(round.player1Show),
+            player2Show: String(round.player2Show)
+          });
+        };
+
+        // Save edited round
+        const saveRoundEdit = () => {
+          const { roundIndex, player1Peg, player2Peg, player1Show, player2Show } = editingCribbage;
+          const newP1Peg = Math.max(0, parseInt(player1Peg) || 0);
+          const newP2Peg = Math.max(0, parseInt(player2Peg) || 0);
+          const newP1Show = Math.max(0, parseInt(player1Show) || 0);
+          const newP2Show = Math.max(0, parseInt(player2Show) || 0);
+
+          // Recalculate totals from scratch
+          let runningP1 = 0;
+          let runningP2 = 0;
+          const updatedRounds = cribbageRounds.map((r, i) => {
+            if (i === roundIndex) {
+              runningP1 += newP1Peg + newP1Show;
+              runningP2 += newP2Peg + newP2Show;
+              return {
+                ...r,
+                player1Peg: newP1Peg,
+                player2Peg: newP2Peg,
+                player1Show: newP1Show,
+                player2Show: newP2Show,
+                total1: runningP1,
+                total2: runningP2
+              };
+            } else {
+              runningP1 += r.player1Peg + r.player1Show;
+              runningP2 += r.player2Peg + r.player2Show;
+              return {...r, total1: runningP1, total2: runningP2};
+            }
+          });
+
+          setCribbageRounds(updatedRounds);
+          setPlayers(players.map((p, i) => ({
+            ...p,
+            total: i === 0 ? runningP1 : runningP2
+          })));
+          setEditingCribbage(null);
+        };
         
+
         return (
           <div className="cribbage-layout">
             <div className="card cribbage-board-card">
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '20px'}}>
                 <div style={{textAlign: 'center'}}>
-                  <div style={{color: '#fca5a5', fontSize: '14px', fontWeight: '600'}}>ðŸ”´ {p1?.name}</div>
-                  <div onClick={() => setEditingCribbage({playerIndex: 0, value: String(p1?.total || 0)})} 
-                    style={{color: 'white', fontSize: '36px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: '4px'}}>{p1?.total || 0}</div>
+                  <div style={{color: '#fca5a5', fontSize: '14px', fontWeight: '600'}}>🔴 {p1?.name}</div>
+                  <div style={{color: 'white', fontSize: '36px', fontWeight: 'bold'}}>{p1?.total || 0}</div>
                   <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>Street {getStreet(p1?.total || 0)}</div>
                 </div>
                 <div style={{textAlign: 'center'}}>
-                  <div style={{color: '#93c5fd', fontSize: '14px', fontWeight: '600'}}>ðŸ”µ {p2?.name}</div>
-                  <div onClick={() => setEditingCribbage({playerIndex: 1, value: String(p2?.total || 0)})}
-                    style={{color: 'white', fontSize: '36px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: '4px'}}>{p2?.total || 0}</div>
+                  <div style={{color: '#93c5fd', fontSize: '14px', fontWeight: '600'}}>🔵 {p2?.name}</div>
+                  <div style={{color: 'white', fontSize: '36px', fontWeight: 'bold'}}>{p2?.total || 0}</div>
                   <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>Street {getStreet(p2?.total || 0)}</div>
                 </div>
               </div>
-              <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginBottom: '12px'}}>Tap score to edit</p>
 
               {/* Track - 4 streets */}
               <div style={{marginBottom: '12px'}}>
@@ -2187,7 +2422,7 @@
                   );
                 })}
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '8px', padding: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px'}}>
-                  <span style={{fontSize: '16px'}}>ðŸ</span>
+                  <span style={{fontSize: '16px'}}>🏁</span>
                   <span style={{color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600'}}>121 to win!</span>
                 </div>
               </div>
@@ -2195,63 +2430,155 @@
               {/* Skunk warning */}
               {((p1?.total >= 91 && p2?.total < 91) || (p2?.total >= 91 && p1?.total < 91)) && (
                 <div style={{background: 'rgba(245, 158, 11, 0.2)', borderRadius: '10px', padding: '10px', textAlign: 'center', marginTop: '12px'}}>
-                  <span style={{color: '#fcd34d', fontSize: '13px'}}>ðŸ¦¨ Skunk alert! {p1?.total < 91 ? p1?.name : p2?.name} under 91</span>
+                  <span style={{color: '#fcd34d', fontSize: '13px'}}>🦨 Skunk alert! {p1?.total < 91 ? p1?.name : p2?.name} under 91</span>
                 </div>
               )}
             </div>
 
+            {/* Current Round Scoring */}
             <div className="card">
-              <h3 className="text-white font-semibold mb-3 text-center">Add Points</h3>
-              <div style={{display: 'flex', gap: '12px'}}>
-                {/* Player 1 column */}
-                <div style={{flex: 1, background: 'rgba(220,38,38,0.15)', borderRadius: '12px', padding: '12px'}}>
-                  <div style={{color: '#fca5a5', fontSize: '14px', fontWeight: '600', textAlign: 'center', marginBottom: '10px'}}>ðŸ”´ {p1?.name}</div>
-                  <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
-                    {[1, 2, 3, 4, 6, 8, 12, 15, 24].map(pts => (
-                      <button key={pts} onClick={() => {
-                        const newTotal = p1.total + pts;
-                        if (newTotal >= 121) {
-                          setPlayers(players.map((p, i) => i === 0 ? {...p, total: newTotal, scores: [...p.scores, pts]} : p));
-                          setWinner({...p1, total: newTotal});
-                          setScreen('winner');
-                        } else {
-                          setPlayers(players.map((p, i) => i === 0 ? {...p, total: newTotal, scores: [...p.scores, pts]} : p));
-                        }
-                      }} style={{background: '#dc2626', border: 'none', color: 'white', padding: '12px 0', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer'}}>
-                        +{pts}
-                      </button>
-                    ))}
+              <h3 className="text-white font-semibold mb-3 text-center">
+                Round {cribbageRounds.length + 1} - {cribbageCurrentRound.phase === 'peg' ? '🎯 Pegging' : '✋ Show'}
+              </h3>
+
+              {!cribbageCurrentRound.pegConfirmed && (
+                <div style={{marginBottom: '16px'}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '12px', padding: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px'}}>
+                    <div style={{textAlign: 'center', flex: 1}}>
+                      <div style={{color: '#fca5a5', fontSize: '12px', marginBottom: '4px'}}>🔴 {p1?.name}</div>
+                      <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold'}}>{cribbageCurrentRound.player1Peg}</div>
+                      <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>peg points</div>
+                    </div>
+                    <div style={{textAlign: 'center', flex: 1}}>
+                      <div style={{color: '#93c5fd', fontSize: '12px', marginBottom: '4px'}}>🔵 {p2?.name}</div>
+                      <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold'}}>{cribbageCurrentRound.player2Peg}</div>
+                      <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>peg points</div>
+                    </div>
                   </div>
+
+                  <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
+                    <div style={{flex: 1, background: 'rgba(220,38,38,0.15)', borderRadius: '12px', padding: '12px'}}>
+                      <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔴 {p1?.name}</div>
+                      <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
+                        {[1, 2, 3, 4, 6, 8, 12].map(pts => (
+                          <button key={pts} onClick={() => addPoints(0, pts)}
+                            style={{background: '#dc2626', border: 'none', color: 'white', padding: '10px 0', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'}}>
+                            +{pts}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{flex: 1, background: 'rgba(37,99,235,0.15)', borderRadius: '12px', padding: '12px'}}>
+                      <div style={{color: '#93c5fd', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔵 {p2?.name}</div>
+                      <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
+                        {[1, 2, 3, 4, 6, 8, 12].map(pts => (
+                          <button key={pts} onClick={() => addPoints(1, pts)}
+                            style={{background: '#2563eb', border: 'none', color: 'white', padding: '10px 0', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'}}>
+                            +{pts}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button onClick={confirmPeg} disabled={cribbageCurrentRound.player1Peg === 0 && cribbageCurrentRound.player2Peg === 0}
+                    style={{width: '100%', padding: '12px', background: '#047857', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', opacity: (cribbageCurrentRound.player1Peg === 0 && cribbageCurrentRound.player2Peg === 0) ? 0.5 : 1}}>
+                    ✓ Confirm Pegging
+                  </button>
                 </div>
-                
-                {/* Player 2 column */}
-                <div style={{flex: 1, background: 'rgba(37,99,235,0.15)', borderRadius: '12px', padding: '12px'}}>
-                  <div style={{color: '#93c5fd', fontSize: '14px', fontWeight: '600', textAlign: 'center', marginBottom: '10px'}}>ðŸ”µ {p2?.name}</div>
-                  <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
-                    {[1, 2, 3, 4, 6, 8, 12, 15, 24].map(pts => (
-                      <button key={pts} onClick={() => {
-                        const newTotal = p2.total + pts;
-                        if (newTotal >= 121) {
-                          setPlayers(players.map((p, i) => i === 1 ? {...p, total: newTotal, scores: [...p.scores, pts]} : p));
-                          setWinner({...p2, total: newTotal});
-                          setScreen('winner');
-                        } else {
-                          setPlayers(players.map((p, i) => i === 1 ? {...p, total: newTotal, scores: [...p.scores, pts]} : p));
-                        }
-                      }} style={{background: '#2563eb', border: 'none', color: 'white', padding: '12px 0', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer'}}>
-                        +{pts}
-                      </button>
-                    ))}
+              )}
+
+              {cribbageCurrentRound.pegConfirmed && !cribbageCurrentRound.showConfirmed && (
+                <div style={{marginBottom: '16px'}}>
+                  <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '12px', padding: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px'}}>
+                    <div style={{textAlign: 'center', flex: 1}}>
+                      <div style={{color: '#fca5a5', fontSize: '12px', marginBottom: '4px'}}>🔴 {p1?.name}</div>
+                      <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold'}}>{cribbageCurrentRound.player1Show}</div>
+                      <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>show points</div>
+                    </div>
+                    <div style={{textAlign: 'center', flex: 1}}>
+                      <div style={{color: '#93c5fd', fontSize: '12px', marginBottom: '4px'}}>🔵 {p2?.name}</div>
+                      <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold'}}>{cribbageCurrentRound.player2Show}</div>
+                      <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>show points</div>
+                    </div>
                   </div>
+
+                  <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
+                    <div style={{flex: 1, background: 'rgba(220,38,38,0.15)', borderRadius: '12px', padding: '12px'}}>
+                      <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔴 {p1?.name}</div>
+                      <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
+                        {[1, 2, 4, 8, 12, 15, 24].map(pts => (
+                          <button key={pts} onClick={() => addPoints(0, pts)}
+                            style={{background: '#dc2626', border: 'none', color: 'white', padding: '10px 0', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'}}>
+                            +{pts}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                    <div style={{flex: 1, background: 'rgba(37,99,235,0.15)', borderRadius: '12px', padding: '12px'}}>
+                      <div style={{color: '#93c5fd', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔵 {p2?.name}</div>
+                      <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
+                        {[1, 2, 4, 8, 12, 15, 24].map(pts => (
+                          <button key={pts} onClick={() => addPoints(1, pts)}
+                            style={{background: '#2563eb', border: 'none', color: 'white', padding: '10px 0', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'}}>
+                            +{pts}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  <button onClick={confirmShow} disabled={cribbageCurrentRound.player1Show === 0 && cribbageCurrentRound.player2Show === 0}
+                    style={{width: '100%', padding: '12px', background: '#047857', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', opacity: (cribbageCurrentRound.player1Show === 0 && cribbageCurrentRound.player2Show === 0) ? 0.5 : 1}}>
+                    ✓ Confirm Show & Complete Round
+                  </button>
+                </div>
+              )}
+
+              <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginTop: '8px'}}>
+                {cribbageCurrentRound.phase === 'peg' ? '+1 go/last • +2 pair/15/31 • +3 run • +6 trips • +12 quads' : 'Each 15=2 • Pairs=2 • Run=1/card • Flush=4/5 • Nobs=1'}
+              </p>
+            </div>
+
+            {/* Round History */}
+            {cribbageRounds.length > 0 && (
+              <div className="card" style={{gridColumn: '1 / -1'}}>
+                <h3 className="text-white font-semibold mb-3">📋 Round History</h3>
+                <div style={{maxHeight: '300px', overflowY: 'auto'}}>
+                  {cribbageRounds.slice().reverse().map((round, i) => {
+                    const actualIndex = cribbageRounds.length - 1 - i;
+                    return (
+                      <div key={actualIndex} style={{marginBottom: '12px', padding: '12px', background: 'rgba(255,255,255,0.08)', borderRadius: '8px'}}>
+                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
+                          <div style={{color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600'}}>Round {round.roundNumber}</div>
+                          <button onClick={() => editRound(actualIndex)}
+                            style={{background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer'}}>
+                            ✏️ Edit
+                          </button>
+                        </div>
+                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
+                          <div>
+                            <div style={{color: '#fca5a5', fontSize: '11px', marginBottom: '4px'}}>🔴 {p1?.name}</div>
+                            <div style={{color: 'rgba(255,255,255,0.9)', fontSize: '13px'}}>Peg: {round.player1Peg} • Show: {round.player1Show}</div>
+                            <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '12px'}}>Total: {round.total1}</div>
+                          </div>
+                          <div>
+                            <div style={{color: '#93c5fd', fontSize: '11px', marginBottom: '4px'}}>🔵 {p2?.name}</div>
+                            <div style={{color: 'rgba(255,255,255,0.9)', fontSize: '13px'}}>Peg: {round.player2Peg} • Show: {round.player2Show}</div>
+                            <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '12px'}}>Total: {round.total2}</div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-              <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginTop: '10px'}}>+1 go/last â€¢ +2 pair/15/31 â€¢ +3 run â€¢ +6 trips â€¢ +12 quads â€¢ +24 max hand</p>
-            </div>
-            
+            )}
+
             {/* Inline reference - shown on tablets */}
             <div className="tablet-only">
               <div className="card">
-                <h3 className="text-white font-semibold mb-3">ðŸŽ¯ Quick Reference</h3>
+                <h3 className="text-white font-semibold mb-3">🎯 Quick Reference</h3>
                 <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px'}}>
                   <div>
                     <h4 style={{color: '#86efac', fontSize: '13px', fontWeight: '600', marginBottom: '8px'}}>Pegging</h4>
