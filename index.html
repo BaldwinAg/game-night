@@ -195,59 +195,6 @@
       .container { max-width: 960px; }
       .game-cards-grid { grid-template-columns: repeat(3, 1fr); }
     }
-
-    /* Group Management Styles */
-    .group-selector {
-      font-size: 14px;
-      padding: 8px 12px;
-      margin-bottom: 16px;
-    }
-
-    .group-card {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 12px;
-      margin-bottom: 8px;
-    }
-
-    .member-avatar {
-      width: 32px;
-      height: 32px;
-      border-radius: 50%;
-      border: 2px solid rgba(255,255,255,0.3);
-      object-fit: cover;
-    }
-
-    .invite-code {
-      font-family: monospace;
-      font-size: 20px;
-      font-weight: bold;
-      letter-spacing: 2px;
-      padding: 12px;
-      background: rgba(255,255,255,0.2);
-      border-radius: 8px;
-      text-align: center;
-      user-select: all;
-    }
-
-    .member-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .member-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 12px;
-      background: rgba(255,255,255,0.1);
-      border-radius: 8px;
-    }
   </style>
 </head>
 <body>
@@ -260,9 +207,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 5.2.0 - Player Groups
+    // Version 5.1.0 - Google Authentication
     // ============================================
-    const APP_VERSION = '5.2.0';
+    const APP_VERSION = '5.1.0';
     
     // Firebase initialization (if configured)
     let firebaseApp = null;
@@ -324,28 +271,6 @@
       }
     };
 
-    // Load selected group from localStorage
-    const loadSelectedGroup = () => {
-      try {
-        return localStorage.getItem('selectedGroupId');
-      } catch (e) {
-        return null;
-      }
-    };
-
-    // Save selected group to localStorage
-    const saveSelectedGroup = (groupId) => {
-      try {
-        if (groupId) {
-          localStorage.setItem('selectedGroupId', groupId);
-        } else {
-          localStorage.removeItem('selectedGroupId');
-        }
-      } catch (e) {
-        console.log('[Groups] Could not save selected group');
-      }
-    };
-
     const GAMES = {
       flip7: { name: 'Flip 7', icon: '🃏', color: 'emerald', targetScore: 200, highestWins: true, description: 'First to 200 wins', minPlayers: 2, maxPlayers: 8, hasTabs: false,
         rules: {
@@ -382,18 +307,18 @@
           ],
           scoring: [
             "UPPER SECTION (Ones thru Sixes):",
-            "  • Add only the dice showing that number",
-            "  • Example: Three 4s = 12 points in Fours",
-            "  • BONUS: Score 35 extra if upper total ≥ 63",
+            "  â€¢ Add only the dice showing that number",
+            "  â€¢ Example: Three 4s = 12 points in Fours",
+            "  â€¢ BONUS: Score 35 extra if upper total â‰¥ 63",
             "",
             "LOWER SECTION:",
-            "  • 3 of a Kind: Sum of ALL dice (need 3 matching)",
-            "  • 4 of a Kind: Sum of ALL dice (need 4 matching)",
-            "  • Full House: 25 pts (3 of one + 2 of another)",
-            "  • Small Straight: 30 pts (4 in sequence: 1-2-3-4, 2-3-4-5, or 3-4-5-6)",
-            "  • Large Straight: 40 pts (5 in sequence: 1-2-3-4-5 or 2-3-4-5-6)",
-            "  • YAHTZEE: 50 pts (all 5 dice the same)",
-            "  • Chance: Sum of all dice (use for bad rolls)"
+            "  â€¢ 3 of a Kind: Sum of ALL dice (need 3 matching)",
+            "  â€¢ 4 of a Kind: Sum of ALL dice (need 4 matching)",
+            "  â€¢ Full House: 25 pts (3 of one + 2 of another)",
+            "  â€¢ Small Straight: 30 pts (4 in sequence: 1-2-3-4, 2-3-4-5, or 3-4-5-6)",
+            "  â€¢ Large Straight: 40 pts (5 in sequence: 1-2-3-4-5 or 2-3-4-5-6)",
+            "  â€¢ YAHTZEE: 50 pts (all 5 dice the same)",
+            "  â€¢ Chance: Sum of all dice (use for bad rolls)"
           ],
           winning: "After all 13 categories are filled, add up your total. Highest score wins!"
         }
@@ -412,15 +337,15 @@
           ],
           scoring: [
             "PENALTY POINTS (cards left in hand):",
-            "  • Cards 1-9: 5 points each",
-            "  • Cards 10-12: 10 points each",
-            "  • Skip cards: 15 points each",
-            "  • Wild cards: 25 points each",
+            "  â€¢ Cards 1-9: 5 points each",
+            "  â€¢ Cards 10-12: 10 points each",
+            "  â€¢ Skip cards: 15 points each",
+            "  â€¢ Wild cards: 25 points each",
             "",
             "IMPORTANT:",
-            "  • If you complete your phase, advance to next phase",
-            "  • If you don't complete it, stay on same phase",
-            "  • Points are BAD - you want the lowest score!"
+            "  â€¢ If you complete your phase, advance to next phase",
+            "  â€¢ If you don't complete it, stay on same phase",
+            "  â€¢ Points are BAD - you want the lowest score!"
           ],
           winning: "First player to complete Phase 10 wins! If tied, lowest total penalty points breaks the tie."
         }
@@ -439,27 +364,27 @@
           ],
           scoring: [
             "SINGLE DICE:",
-            "  • Each 1 = 100 points",
-            "  • Each 5 = 50 points",
-            "  • Single 2, 3, 4, 6 = nothing!",
+            "  â€¢ Each 1 = 100 points",
+            "  â€¢ Each 5 = 50 points",
+            "  â€¢ Single 2, 3, 4, 6 = nothing!",
             "",
             "THREE OF A KIND:",
-            "  • Three 1s = 1,000 points",
-            "  • Three 2s = 200 points",
-            "  • Three 3s = 300 points",
-            "  • Three 4s = 400 points",
-            "  • Three 5s = 500 points",
-            "  • Three 6s = 600 points",
+            "  â€¢ Three 1s = 1,000 points",
+            "  â€¢ Three 2s = 200 points",
+            "  â€¢ Three 3s = 300 points",
+            "  â€¢ Three 4s = 400 points",
+            "  â€¢ Three 5s = 500 points",
+            "  â€¢ Three 6s = 600 points",
             "",
             "FOUR+ OF A KIND:",
-            "  • 4 of a kind = 2Ã— the triple value",
-            "  • 5 of a kind = 4Ã— the triple value",
-            "  • 6 of a kind = 8Ã— the triple value",
+            "  â€¢ 4 of a kind = 2Ã— the triple value",
+            "  â€¢ 5 of a kind = 4Ã— the triple value",
+            "  â€¢ 6 of a kind = 8Ã— the triple value",
             "",
             "SPECIAL COMBOS:",
-            "  • Straight (1-2-3-4-5-6) = 1,500 points",
-            "  • Three Pairs = 1,500 points",
-            "  • Two Triplets = 2,500 points"
+            "  â€¢ Straight (1-2-3-4-5-6) = 1,500 points",
+            "  â€¢ Three Pairs = 1,500 points",
+            "  â€¢ Two Triplets = 2,500 points"
           ],
           winning: "First player to reach 10,000 points wins! Final round: others get one more turn to beat the leader."
         }
@@ -471,22 +396,22 @@
           gameplay: [
             "Draw one card (from stock OR discard pile)",
             "Form melds in your hand:",
-            "  • Sets: 3-4 cards of same rank (e.g., 7-7-7)",
-            "  • Runs: 3+ consecutive same suit (e.g., 4â™ -5â™ -6â™ )",
+            "  â€¢ Sets: 3-4 cards of same rank (e.g., 7-7-7)",
+            "  â€¢ Runs: 3+ consecutive same suit (e.g., 4â™ -5â™ -6â™ )",
             "Discard one card to end your turn",
             "KNOCK: End round when deadwood â‰¤ 10",
             "GIN: Knock with 0 deadwood for bonus!"
           ],
           scoring: [
             "CARD VALUES (for deadwood):",
-            "  • Face cards (J, Q, K): 10 points",
-            "  • Aces: 1 point",
-            "  • Number cards: Face value",
+            "  â€¢ Face cards (J, Q, K): 10 points",
+            "  â€¢ Aces: 1 point",
+            "  â€¢ Number cards: Face value",
             "",
             "WINNING THE HAND:",
-            "  • Knock: Score difference between deadwoods",
-            "  • Gin Bonus: 25 points + opponent's deadwood",
-            "  • Undercut: If defender has â‰¤ knocker's deadwood,",
+            "  â€¢ Knock: Score difference between deadwoods",
+            "  â€¢ Gin Bonus: 25 points + opponent's deadwood",
+            "  â€¢ Undercut: If defender has â‰¤ knocker's deadwood,",
             "    defender scores 25 + the difference!",
             "",
             "BIG GIN: Go gin on 11 cards (before discarding) = 31 bonus"
@@ -500,34 +425,34 @@
           setup: "Deal 6 cards each. Each player discards 2 cards face-down to the 'crib' (dealer's bonus hand). Cut deck to reveal 'starter' card.",
           gameplay: [
             "PEGGING: Take turns playing cards, keeping running total",
-            "  • Can't exceed 31 â€” say 'Go' if you can't play",
-            "  • Hit 31 exactly or last to play = points",
-            "  • Reset to 0 and continue until cards gone",
+            "  â€¢ Can't exceed 31 â€” say 'Go' if you can't play",
+            "  â€¢ Hit 31 exactly or last to play = points",
+            "  â€¢ Reset to 0 and continue until cards gone",
             "THE SHOW: Count points in your hand + starter card",
-            "  • Non-dealer counts first, then dealer",
-            "  • Dealer also counts the crib",
+            "  â€¢ Non-dealer counts first, then dealer",
+            "  â€¢ Dealer also counts the crib",
             "Alternate dealing each round"
           ],
           scoring: [
             "PEGGING (during play):",
-            "  • 15 exactly: 2 pts",
-            "  • 31 exactly: 2 pts",
-            "  • Pair: 2 pts",
-            "  • Three of a kind: 6 pts",
-            "  • Four of a kind: 12 pts",
-            "  • Run (3+): 1 pt per card",
-            "  • Go (opponent can't play): 1 pt",
-            "  • Last card: 1 pt",
+            "  â€¢ 15 exactly: 2 pts",
+            "  â€¢ 31 exactly: 2 pts",
+            "  â€¢ Pair: 2 pts",
+            "  â€¢ Three of a kind: 6 pts",
+            "  â€¢ Four of a kind: 12 pts",
+            "  â€¢ Run (3+): 1 pt per card",
+            "  â€¢ Go (opponent can't play): 1 pt",
+            "  â€¢ Last card: 1 pt",
             "",
             "THE SHOW (hand counting):",
-            "  • 15s: 2 pts per combo totaling 15",
-            "  • Pairs: 2 pts each",
-            "  • Runs: 1 pt per card in sequence",
-            "  • Flush: 4 pts (5 if starter matches)",
-            "  • Nobs: 1 pt (Jack matching starter suit)",
+            "  â€¢ 15s: 2 pts per combo totaling 15",
+            "  â€¢ Pairs: 2 pts each",
+            "  â€¢ Runs: 1 pt per card in sequence",
+            "  â€¢ Flush: 4 pts (5 if starter matches)",
+            "  â€¢ Nobs: 1 pt (Jack matching starter suit)",
             "",
             "SPECIAL:",
-            "  • His Heels: 2 pts if starter is a Jack (to dealer)"
+            "  â€¢ His Heels: 2 pts if starter is a Jack (to dealer)"
           ],
           winning: "First to 121 wins! If winner hits 121 before loser reaches 91, it's a 'skunk' (double win)!"
         }
@@ -546,14 +471,14 @@
           ],
           scoring: [
             "10-POINT:",
-            "  • Ace (High): 1 pt",
-            "  • Jack: 1 pt",
-            "  • Off-Jack (Jick): 1 pt",
-            "  • High Joker: 1 pt",
-            "  • Low Joker: 1 pt",
-            "  • 10: 1 pt",
-            "  • 3: 3 pts",
-            "  • 2 (Low): 1 pt - goes to HOLDER",
+            "  â€¢ Ace (High): 1 pt",
+            "  â€¢ Jack: 1 pt",
+            "  â€¢ Off-Jack (Jick): 1 pt",
+            "  â€¢ High Joker: 1 pt",
+            "  â€¢ Low Joker: 1 pt",
+            "  â€¢ 10: 1 pt",
+            "  â€¢ 3: 3 pts",
+            "  â€¢ 2 (Low): 1 pt - goes to HOLDER",
             "",
             "13-POINT: Add Off-3 (3 pts)",
             "",
@@ -584,9 +509,9 @@
         { key: 'fives', name: 'Fives', icon: 'âš„' }, { key: 'sixes', name: 'Sixes', icon: 'âš…' },
       ],
       lower: [
-        { key: 'threeKind', name: '3 of a Kind', icon: 'ðŸŽ²' }, { key: 'fourKind', name: '4 of a Kind', icon: 'ðŸŽ²' },
-        { key: 'fullHouse', name: 'Full House', icon: 'ðŸ ' }, { key: 'smallStraight', name: 'Sm Straight', icon: 'ðŸ“ˆ' },
-        { key: 'largeStraight', name: 'Lg Straight', icon: 'ðŸ“ˆ' }, { key: 'yahtzee', name: 'YAHTZEE', icon: 'ðŸŒŸ' },
+        { key: 'threeKind', name: '3 of a Kind', icon: '🎲' }, { key: 'fourKind', name: '4 of a Kind', icon: '🎲' },
+        { key: 'fullHouse', name: 'Full House', icon: 'ðŸ ' }, { key: 'smallStraight', name: 'Sm Straight', icon: '📈' },
+        { key: 'largeStraight', name: 'Lg Straight', icon: '📈' }, { key: 'yahtzee', name: 'YAHTZEE', icon: '🌟' },
         { key: 'chance', name: 'Chance', icon: 'â“' },
       ]
     };
@@ -610,16 +535,6 @@
       const [editingRoundScore, setEditingRoundScore] = useState(null);
       const [editingYahtzee, setEditingYahtzee] = useState(null);
       const [editingCribbage, setEditingCribbage] = useState(null);
-      const [cribbageRounds, setCribbageRounds] = useState([]); // History of completed rounds
-      const [cribbageCurrentRound, setCribbageCurrentRound] = useState({
-        phase: 'peg', // 'peg' or 'show'
-        player1Peg: 0,
-        player2Peg: 0,
-        player1Show: 0,
-        player2Show: 0,
-        pegConfirmed: false,
-        showConfirmed: false
-      });
       const [showRules, setShowRules] = useState(false);
       
       // Pitch-specific state
@@ -652,16 +567,6 @@
       // Authentication state
       const [currentUser, setCurrentUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
-
-      // Group Management state
-      const [showGroupManager, setShowGroupManager] = useState(false);
-      const [currentGroups, setCurrentGroups] = useState([]);
-      const [selectedGroupId, setSelectedGroupId] = useState(null);
-      const [activeGroupData, setActiveGroupData] = useState(null);
-      const [groupMembers, setGroupMembers] = useState([]);
-      const [createGroupName, setCreateGroupName] = useState('');
-      const [joinGroupCode, setJoinGroupCode] = useState('');
-      const [groupLoading, setGroupLoading] = useState(false);
 
       // Firebase Auth Observer - Listen for auth state changes
       useEffect(() => {
@@ -736,59 +641,6 @@
           setWinRecorded(false);
         }
       }, [screen]);
-
-      // Load selected group from localStorage
-      useEffect(() => {
-        const savedGroupId = loadSelectedGroup();
-        if (savedGroupId && firebaseConfigured && currentUser) {
-          setSelectedGroupId(savedGroupId);
-        }
-      }, [currentUser]);
-
-      // Listen to user's groups (real-time updates)
-      useEffect(() => {
-        if (!firebaseDb || !currentUser) {
-          setCurrentGroups([]);
-          return;
-        }
-
-        // Query all groups where the user is a member
-        // Note: We can't use array-contains with object, so we query all groups
-        // and filter on client side, or use a memberIds array field
-        const unsubscribe = firebaseDb.collection('groups')
-          .onSnapshot(snapshot => {
-            const allGroups = snapshot.docs.map(doc => ({
-              id: doc.id,
-              ...doc.data()
-            }));
-
-            // Filter to groups where current user is a member
-            const userGroups = allGroups.filter(group =>
-              group.members && group.members.some(m => m.userId === currentUser.uid)
-            );
-
-            setCurrentGroups(userGroups);
-
-            // Update active group data if it changed
-            if (selectedGroupId) {
-              const activeGroup = userGroups.find(g => g.id === selectedGroupId);
-              if (activeGroup) {
-                setActiveGroupData(activeGroup);
-                setGroupMembers(activeGroup.members || []);
-              } else {
-                // Group was deleted or user was removed
-                setSelectedGroupId(null);
-                saveSelectedGroup(null);
-                setActiveGroupData(null);
-                setGroupMembers([]);
-              }
-            }
-          }, error => {
-            console.error('[Groups] Listener error:', error);
-          });
-
-        return () => unsubscribe();
-      }, [currentUser, selectedGroupId]);
 
       // Record a win (for manual use if needed)
       const recordWin = (playerName, gameKey) => {
@@ -921,254 +773,6 @@
         } catch (error) {
           console.error('[Auth] Sign-out error:', error);
           alert('Sign-out failed: ' + error.message);
-        }
-      };
-
-      // Group Management functions
-      const generateInviteCode = async () => {
-        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-        let attempts = 0;
-
-        while (attempts < 10) {
-          let code = '';
-          for (let i = 0; i < 6; i++) {
-            code += chars.charAt(Math.floor(Math.random() * chars.length));
-          }
-
-          // Check uniqueness
-          const existing = await firebaseDb.collection('groups')
-            .where('inviteCode', '==', code)
-            .limit(1)
-            .get();
-
-          if (existing.empty) return code;
-          attempts++;
-        }
-
-        throw new Error('Failed to generate unique invite code');
-      };
-
-      const handleCreateGroup = async () => {
-        if (!firebaseDb || !currentUser) return;
-
-        const name = createGroupName.trim();
-        if (name.length < 3 || name.length > 30) {
-          alert('Group name must be 3-30 characters');
-          return;
-        }
-
-        setGroupLoading(true);
-
-        try {
-          const inviteCode = await generateInviteCode();
-          const groupData = {
-            name: name,
-            ownerId: currentUser.uid,
-            inviteCode: inviteCode,
-            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-            memberCount: 1,
-            members: [{
-              userId: currentUser.uid,
-              displayName: currentUser.displayName || 'Anonymous',
-              photoURL: currentUser.photoURL || '',
-              joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }]
-          };
-
-          const groupRef = await firebaseDb.collection('groups').add(groupData);
-
-          // Set as active group
-          setSelectedGroupId(groupRef.id);
-          saveSelectedGroup(groupRef.id);
-
-          // Clear form
-          setCreateGroupName('');
-
-          console.log('[Groups] Created group:', groupRef.id);
-        } catch (error) {
-          console.error('[Groups] Create error:', error);
-          alert('Failed to create group: ' + error.message);
-        } finally {
-          setGroupLoading(false);
-        }
-      };
-
-      const handleJoinGroup = async () => {
-        if (!firebaseDb || !currentUser) return;
-
-        const code = joinGroupCode.trim().toUpperCase();
-        if (code.length !== 6) {
-          alert('Invite code must be 6 characters');
-          return;
-        }
-
-        setGroupLoading(true);
-
-        try {
-          // Find group by invite code
-          const groupsSnapshot = await firebaseDb.collection('groups')
-            .where('inviteCode', '==', code)
-            .limit(1)
-            .get();
-
-          if (groupsSnapshot.empty) {
-            alert('Invalid invite code');
-            return;
-          }
-
-          const groupDoc = groupsSnapshot.docs[0];
-          const groupData = groupDoc.data();
-
-          // Check if already a member
-          const isMember = groupData.members.some(m => m.userId === currentUser.uid);
-          if (isMember) {
-            alert('You are already a member of this group');
-            setSelectedGroupId(groupDoc.id);
-            saveSelectedGroup(groupDoc.id);
-            setJoinGroupCode('');
-            return;
-          }
-
-          // Check member limit
-          if (groupData.memberCount >= 20) {
-            alert('Group is full (max 20 members)');
-            return;
-          }
-
-          // Add member
-          await firebaseDb.collection('groups').doc(groupDoc.id).update({
-            members: firebase.firestore.FieldValue.arrayUnion({
-              userId: currentUser.uid,
-              displayName: currentUser.displayName || 'Anonymous',
-              photoURL: currentUser.photoURL || '',
-              joinedAt: firebase.firestore.FieldValue.serverTimestamp()
-            }),
-            memberCount: firebase.firestore.FieldValue.increment(1)
-          });
-
-          // Set as active group
-          setSelectedGroupId(groupDoc.id);
-          saveSelectedGroup(groupDoc.id);
-          setJoinGroupCode('');
-
-          console.log('[Groups] Joined group:', groupDoc.id);
-        } catch (error) {
-          console.error('[Groups] Join error:', error);
-          alert('Failed to join group: ' + error.message);
-        } finally {
-          setGroupLoading(false);
-        }
-      };
-
-      const switchToGroup = (groupId) => {
-        if (!groupId) {
-          setSelectedGroupId(null);
-          saveSelectedGroup(null);
-          setActiveGroupData(null);
-          setGroupMembers([]);
-          return;
-        }
-
-        setSelectedGroupId(groupId);
-        saveSelectedGroup(groupId);
-
-        const groupData = currentGroups.find(g => g.id === groupId);
-        if (groupData) {
-          setActiveGroupData(groupData);
-          setGroupMembers(groupData.members || []);
-        }
-      };
-
-      const handleLeaveGroup = async () => {
-        if (!activeGroupData || !currentUser) return;
-
-        if (!confirm(`Leave "${activeGroupData.name}"?`)) return;
-
-        setGroupLoading(true);
-
-        try {
-          const groupRef = firebaseDb.collection('groups').doc(activeGroupData.id);
-          const isOwner = activeGroupData.ownerId === currentUser.uid;
-
-          // Remove self from members
-          const updatedMembers = activeGroupData.members.filter(
-            m => m.userId !== currentUser.uid
-          );
-
-          if (updatedMembers.length === 0) {
-            // Last member - delete group
-            await groupRef.delete();
-            console.log('[Groups] Deleted empty group');
-          } else if (isOwner) {
-            // Transfer ownership to oldest member
-            await groupRef.update({
-              members: updatedMembers,
-              memberCount: updatedMembers.length,
-              ownerId: updatedMembers[0].userId
-            });
-            console.log('[Groups] Transferred ownership');
-          } else {
-            // Regular member leaving
-            await groupRef.update({
-              members: updatedMembers,
-              memberCount: updatedMembers.length
-            });
-          }
-
-          // Clear local selection
-          setSelectedGroupId(null);
-          saveSelectedGroup(null);
-          setActiveGroupData(null);
-          setGroupMembers([]);
-          setShowGroupManager(false);
-
-        } catch (error) {
-          console.error('[Groups] Leave error:', error);
-          alert('Failed to leave group: ' + error.message);
-        } finally {
-          setGroupLoading(false);
-        }
-      };
-
-      const handleRemoveMember = async (userId) => {
-        if (!activeGroupData || !currentUser) return;
-        if (activeGroupData.ownerId !== currentUser.uid) {
-          alert('Only the group owner can remove members');
-          return;
-        }
-
-        const member = activeGroupData.members.find(m => m.userId === userId);
-        if (!confirm(`Remove ${member.displayName} from group?`)) return;
-
-        setGroupLoading(true);
-
-        try {
-          const updatedMembers = activeGroupData.members.filter(
-            m => m.userId !== userId
-          );
-
-          await firebaseDb.collection('groups').doc(activeGroupData.id).update({
-            members: updatedMembers,
-            memberCount: updatedMembers.length
-          });
-
-          console.log('[Groups] Removed member');
-        } catch (error) {
-          console.error('[Groups] Remove error:', error);
-          alert('Failed to remove member: ' + error.message);
-        } finally {
-          setGroupLoading(false);
-        }
-      };
-
-      const copyToClipboard = (text) => {
-        if (navigator.clipboard) {
-          navigator.clipboard.writeText(text)
-            .then(() => alert('Copied to clipboard!'))
-            .catch(() => alert('Failed to copy'));
-        } else {
-          // Fallback for older browsers
-          alert(`Invite Code: ${text}`);
         }
       };
 
@@ -1423,97 +1027,6 @@
 
       const EditCribbageModal = () => {
         if (!editingCribbage) return null;
-
-        // Handle round editing
-        if (editingCribbage.type === 'round') {
-          const round = cribbageRounds[editingCribbage.roundIndex];
-          const saveRoundEdit = () => {
-            const newP1Peg = Math.max(0, parseInt(editingCribbage.player1Peg) || 0);
-            const newP2Peg = Math.max(0, parseInt(editingCribbage.player2Peg) || 0);
-            const newP1Show = Math.max(0, parseInt(editingCribbage.player1Show) || 0);
-            const newP2Show = Math.max(0, parseInt(editingCribbage.player2Show) || 0);
-
-            // Recalculate totals from scratch
-            let runningP1 = 0;
-            let runningP2 = 0;
-            const updatedRounds = cribbageRounds.map((r, i) => {
-              if (i === editingCribbage.roundIndex) {
-                runningP1 += newP1Peg + newP1Show;
-                runningP2 += newP2Peg + newP2Show;
-                return {
-                  ...r,
-                  player1Peg: newP1Peg,
-                  player2Peg: newP2Peg,
-                  player1Show: newP1Show,
-                  player2Show: newP2Show,
-                  total1: runningP1,
-                  total2: runningP2
-                };
-              } else {
-                runningP1 += r.player1Peg + r.player1Show;
-                runningP2 += r.player2Peg + r.player2Show;
-                return {...r, total1: runningP1, total2: runningP2};
-              }
-            });
-
-            setCribbageRounds(updatedRounds);
-            setPlayers(players.map((p, i) => ({
-              ...p,
-              total: i === 0 ? runningP1 : runningP2
-            })));
-            setEditingCribbage(null);
-          };
-
-          return (
-            <div className="modal-overlay">
-              <div className="modal">
-                <div className="modal-title">Edit Round {round.roundNumber}</div>
-                <div style={{marginBottom: '16px'}}>
-                  <div style={{marginBottom: '12px'}}>
-                    <div style={{color: '#fca5a5', fontSize: '13px', marginBottom: '4px'}}>🔴 {players[0]?.name}</div>
-                    <div style={{display: 'flex', gap: '8px', marginBottom: '4px'}}>
-                      <div style={{flex: 1}}>
-                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Peg</label>
-                        <input type="text" inputMode="numeric" className="input text-center"
-                          value={editingCribbage.player1Peg}
-                          onChange={(e) => setEditingCribbage({...editingCribbage, player1Peg: e.target.value})} />
-                      </div>
-                      <div style={{flex: 1}}>
-                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Show</label>
-                        <input type="text" inputMode="numeric" className="input text-center"
-                          value={editingCribbage.player1Show}
-                          onChange={(e) => setEditingCribbage({...editingCribbage, player1Show: e.target.value})} />
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <div style={{color: '#93c5fd', fontSize: '13px', marginBottom: '4px'}}>🔵 {players[1]?.name}</div>
-                    <div style={{display: 'flex', gap: '8px'}}>
-                      <div style={{flex: 1}}>
-                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Peg</label>
-                        <input type="text" inputMode="numeric" className="input text-center"
-                          value={editingCribbage.player2Peg}
-                          onChange={(e) => setEditingCribbage({...editingCribbage, player2Peg: e.target.value})} />
-                      </div>
-                      <div style={{flex: 1}}>
-                        <label style={{fontSize: '11px', color: 'rgba(255,255,255,0.6)'}}>Show</label>
-                        <input type="text" inputMode="numeric" className="input text-center"
-                          value={editingCribbage.player2Show}
-                          onChange={(e) => setEditingCribbage({...editingCribbage, player2Show: e.target.value})} />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div className="modal-buttons">
-                  <button className="btn btn-cancel" onClick={() => setEditingCribbage(null)}>Cancel</button>
-                  <button className="btn accent-emerald text-white" onClick={saveRoundEdit}>Save</button>
-                </div>
-              </div>
-            </div>
-          );
-        }
-
-        // Handle legacy player total editing (not used in new UI, but keep for compatibility)
         const player = players[editingCribbage.playerIndex];
         const saveCribbageEdit = () => {
           const newTotal = Math.max(0, Math.min(121, parseInt(editingCribbage.value) || 0));
@@ -1592,7 +1105,7 @@
       const RulesScreen = () => (
         <div className={`app bg-${game.color}`} style={{paddingBottom: '24px'}}>
           <div className="container">
-            <button onClick={() => setShowRules(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>â† Back</button>
+            <button onClick={() => setShowRules(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
             <div className="text-center mb-6">
               <span className="text-5xl mb-2">{game.icon}</span>
               <h1 className="text-3xl font-bold text-white">{game.name} Rules</h1>
@@ -1602,11 +1115,11 @@
               <p className="text-lighter">{game.rules.overview}</p>
             </div>
             <div className="card">
-              <h3 className="text-white font-semibold mb-2">ðŸŽ´ Setup</h3>
+              <h3 className="text-white font-semibold mb-2">🎴 Setup</h3>
               <p className="text-lighter">{game.rules.setup}</p>
             </div>
             <div className="card">
-              <h3 className="text-white font-semibold mb-2">ðŸŽ® How to Play</h3>
+              <h3 className="text-white font-semibold mb-2">🎮 How to Play</h3>
               {(() => {
                 let stepNum = 0;
                 return game.rules.gameplay.map((step, i) => {
@@ -1621,7 +1134,7 @@
               })()}
             </div>
             <div className="card">
-              <h3 className="text-white font-semibold mb-2">ðŸ§® Scoring</h3>
+              <h3 className="text-white font-semibold mb-2">🧮 Scoring</h3>
               {game.rules.scoring.map((rule, i) => {
                 if (rule === '') return <div key={i} style={{height: '8px'}}></div>;
                 const isHeader = rule.endsWith(':') && !rule.startsWith('  ');
@@ -1645,141 +1158,6 @@
 
       if (showRules && game) return <RulesScreen />;
 
-      // GROUP MANAGER SCREEN
-      const GroupManagerModal = () => (
-        <div className="app bg-slate" style={{paddingBottom: '24px'}}>
-          <div className="container">
-            <button onClick={() => setShowGroupManager(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
-
-            <div className="text-center mb-6">
-              <span className="text-5xl mb-2">👥</span>
-              <h1 className="text-3xl font-bold text-white">Manage Groups</h1>
-              <p className="text-light text-sm mt-1">Create and join game night groups</p>
-            </div>
-
-            {/* Active Group Section */}
-            {activeGroupData && (
-              <div className="card mb-4">
-                <div className="flex justify-between items-center mb-3">
-                  <h2 className="text-white font-semibold text-lg">{activeGroupData.name}</h2>
-                  {activeGroupData.ownerId === currentUser.uid && (
-                    <span className="badge text-xs" style={{background: 'rgba(245, 158, 11, 0.3)', color: '#fcd34d'}}>Owner</span>
-                  )}
-                </div>
-
-                <div className="mb-3">
-                  <p className="text-light text-sm mb-2">Invite Code:</p>
-                  <div className="invite-code">{activeGroupData.inviteCode}</div>
-                  <button onClick={() => copyToClipboard(activeGroupData.inviteCode)} className="btn btn-primary w-full mt-2 text-sm">
-                    📋 Copy Code
-                  </button>
-                </div>
-
-                <div className="divider"></div>
-
-                <div className="mb-3">
-                  <p className="text-light text-sm mb-2">Members ({groupMembers.length}):</p>
-                  <div className="member-list">
-                    {groupMembers.map(member => (
-                      <div key={member.userId} className="member-item">
-                        {member.photoURL ? (
-                          <img src={member.photoURL} alt={member.displayName} className="member-avatar" />
-                        ) : (
-                          <div className="member-avatar" style={{background: 'rgba(255,255,255,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px'}}>
-                            {member.displayName.charAt(0).toUpperCase()}
-                          </div>
-                        )}
-                        <span className="text-white text-sm">{member.displayName}</span>
-                        {activeGroupData.ownerId === currentUser.uid && member.userId !== currentUser.uid && (
-                          <button onClick={() => handleRemoveMember(member.userId)} className="remove-btn" style={{fontSize: '14px', marginLeft: '4px'}}>✕</button>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <button onClick={handleLeaveGroup} disabled={groupLoading} className="btn w-full text-sm" style={{background: 'rgba(239,68,68,0.3)', color: '#fca5a5'}}>
-                  🚪 Leave Group
-                </button>
-              </div>
-            )}
-
-            {/* My Groups */}
-            {currentGroups.length > 0 && (
-              <div className="card mb-4">
-                <h2 className="text-white font-semibold mb-3">My Groups</h2>
-                {currentGroups.map(group => (
-                  <div key={group.id} className="group-card">
-                    <div>
-                      <div className="text-white font-medium">{group.name}</div>
-                      <div className="text-light text-xs">{group.memberCount} {group.memberCount === 1 ? 'member' : 'members'}</div>
-                    </div>
-                    <button
-                      onClick={() => {
-                        switchToGroup(group.id);
-                        setShowGroupManager(false);
-                      }}
-                      className="btn btn-primary text-sm"
-                      style={{padding: '6px 12px'}}
-                      disabled={selectedGroupId === group.id}
-                    >
-                      {selectedGroupId === group.id ? 'Active' : 'Switch'}
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Create Group Form */}
-            <div className="card mb-4">
-              <h2 className="text-white font-semibold mb-3">Create New Group</h2>
-              <input
-                type="text"
-                value={createGroupName}
-                onChange={(e) => setCreateGroupName(e.target.value)}
-                placeholder="Enter group name (3-30 characters)"
-                className="input mb-3"
-                maxLength={30}
-              />
-              <button
-                onClick={handleCreateGroup}
-                disabled={groupLoading || createGroupName.trim().length < 3}
-                className="btn accent-emerald text-white w-full"
-              >
-                {groupLoading ? 'Creating...' : '✨ Create Group'}
-              </button>
-            </div>
-
-            {/* Join Group Form */}
-            <div className="card">
-              <h2 className="text-white font-semibold mb-3">Join with Code</h2>
-              <input
-                type="text"
-                value={joinGroupCode}
-                onChange={(e) => setJoinGroupCode(e.target.value.toUpperCase())}
-                placeholder="Enter 6-character code"
-                className="input mb-3"
-                maxLength={6}
-                style={{textTransform: 'uppercase', fontFamily: 'monospace', letterSpacing: '2px'}}
-              />
-              <button
-                onClick={handleJoinGroup}
-                disabled={groupLoading || joinGroupCode.length !== 6}
-                className="btn accent-blue text-white w-full"
-              >
-                {groupLoading ? 'Joining...' : '🚀 Join Group'}
-              </button>
-            </div>
-
-            <p className="text-center text-xs mt-4" style={{color: 'rgba(255,255,255,0.4)'}}>
-              Groups sync across devices • Max 20 members per group
-            </p>
-          </div>
-        </div>
-      );
-
-      if (showGroupManager) return <GroupManagerModal />;
-
       // LEADERBOARD SCREEN
       const LeaderboardScreen = () => {
         const leaderboard = getLeaderboard();
@@ -1788,7 +1166,7 @@
         return (
           <div className="app bg-slate" style={{paddingBottom: '24px'}}>
             <div className="container">
-              <button onClick={() => setShowLeaderboard(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>â† Back</button>
+              <button onClick={() => setShowLeaderboard(false)} className="text-white mb-4" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
               <div className="text-center mb-6">
                 <span className="text-5xl mb-2">🏆</span>
                 <h1 className="text-3xl font-bold text-white">Wins Leaderboard</h1>
@@ -1824,7 +1202,7 @@
               )}
 
               <div className="card mt-4">
-                <h3 className="text-white font-semibold mb-3">ðŸ“¦ Backup & Restore</h3>
+                <h3 className="text-white font-semibold mb-3">📦 Backup & Restore</h3>
                 <p className="text-light text-sm mb-3">Export as CSV for Excel/Sheets, or restore from a backup file.</p>
                 <div className="flex gap-2 mb-3">
                   <button onClick={exportData} className="btn btn-primary flex-1 text-sm">â¬‡ï¸ Export</button>
@@ -1849,37 +1227,37 @@
       const YahtzeeReference = () => (
         <div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸŽ¯ Upper Section</h3>
+            <h3 className="text-white font-semibold mb-3">🎯 Upper Section</h3>
             <p className="text-light text-xs mb-3">Add up only dice showing that number</p>
             {YAHTZEE_CATEGORIES.upper.map(cat => (
               <div key={cat.key} className="score-item"><span className="text-white">{cat.icon} {cat.name}</span><span className="text-light">Sum of {cat.name.toLowerCase()}</span></div>
             ))}
             <div className="score-highlight mt-3">
-              <div className="flex justify-between"><span className="text-amber font-semibold">✋¨ BONUS</span><span className="text-amber font-bold">+35 pts</span></div>
-              <p className="text-light text-xs mt-1">If upper section ≥ 63 (avg 3 of each)</p>
+              <div className="flex justify-between"><span className="text-amber font-semibold">âœ¨ BONUS</span><span className="text-amber font-bold">+35 pts</span></div>
+              <p className="text-light text-xs mt-1">If upper section â‰¥ 63 (avg 3 of each)</p>
             </div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸŽ¯ Lower Section</h3>
-            <div className="score-item"><span className="text-white">ðŸŽ² 3 of a Kind</span><span className="text-light">Sum all dice</span></div>
-            <div className="score-item"><span className="text-white">ðŸŽ² 4 of a Kind</span><span className="text-light">Sum all dice</span></div>
+            <h3 className="text-white font-semibold mb-3">🎯 Lower Section</h3>
+            <div className="score-item"><span className="text-white">🎲 3 of a Kind</span><span className="text-light">Sum all dice</span></div>
+            <div className="score-item"><span className="text-white">🎲 4 of a Kind</span><span className="text-light">Sum all dice</span></div>
             <div className="score-item"><span className="text-white">ðŸ  Full House</span><span className="text-amber font-bold">25 pts</span></div>
-            <div className="score-item"><span className="text-white">ðŸ“ˆ Sm Straight</span><span className="text-amber font-bold">30 pts</span></div>
-            <div className="score-item"><span className="text-white">ðŸ“ˆ Lg Straight</span><span className="text-amber font-bold">40 pts</span></div>
-            <div className="score-item"><span className="text-white">ðŸŒŸ YAHTZEE</span><span className="text-amber font-bold">50 pts</span></div>
+            <div className="score-item"><span className="text-white">📈 Sm Straight</span><span className="text-amber font-bold">30 pts</span></div>
+            <div className="score-item"><span className="text-white">📈 Lg Straight</span><span className="text-amber font-bold">40 pts</span></div>
+            <div className="score-item"><span className="text-white">🌟 YAHTZEE</span><span className="text-amber font-bold">50 pts</span></div>
             <div className="score-item"><span className="text-white">â“ Chance</span><span className="text-light">Sum all dice</span></div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸ“ˆ Straights</h3>
+            <h3 className="text-white font-semibold mb-3">📈 Straights</h3>
             <div className="score-highlight">
               <div className="flex justify-between mb-2"><span className="text-white font-medium">Small Straight</span><span className="text-green font-bold">30 pts</span></div>
               <p className="text-light text-sm mb-2">4 in a row (5th can be anything)</p>
-              <div className="text-xs text-light">✋“ 1-2-3-4 &nbsp; ✋“ 2-3-4-5 &nbsp; ✋“ 3-4-5-6<br/>Example: 1-2-3-4-4 = ✋“</div>
+              <div className="text-xs text-light">âœ“ 1-2-3-4 &nbsp; âœ“ 2-3-4-5 &nbsp; âœ“ 3-4-5-6<br/>Example: 1-2-3-4-4 = âœ“</div>
             </div>
             <div className="score-highlight mt-2">
               <div className="flex justify-between mb-2"><span className="text-white font-medium">Large Straight</span><span className="text-amber font-bold">40 pts</span></div>
               <p className="text-light text-sm mb-2">All 5 in sequence</p>
-              <div className="text-xs text-light">✋“ 1-2-3-4-5 &nbsp; ✋“ 2-3-4-5-6<br/>✋— 1-2-3-5-6 (missing 4)</div>
+              <div className="text-xs text-light">âœ“ 1-2-3-4-5 &nbsp; âœ“ 2-3-4-5-6<br/>âœ— 1-2-3-5-6 (missing 4)</div>
             </div>
           </div>
         </div>
@@ -1945,7 +1323,7 @@
                 </div>
                 <div className="flex gap-2">
                   <input type="text" inputMode="numeric" value={scoreInput} onChange={(e) => setScoreInput(e.target.value)} placeholder="0" className="input input-score flex-1" style={{fontSize: '20px'}} autoFocus />
-                  <button onClick={submitYahtzeeScore} className="btn accent-amber text-white">✋“</button>
+                  <button onClick={submitYahtzeeScore} className="btn accent-amber text-white">âœ“</button>
                 </div>
                 <button onClick={() => { setSelectedCategory(null); setScoreInput(''); }} className="btn btn-primary w-full mt-2 text-sm" style={{padding: '8px'}}>Cancel</button>
               </div>
@@ -1978,7 +1356,7 @@
                 const isCurrent = currentPlayer?.phase === phase.num;
                 return (
                   <div key={phase.num} className={`phase-item ${isComplete ? 'complete' : isCurrent ? 'current' : 'pending'}`}>
-                    <div className={`phase-num ${isComplete ? 'complete' : isCurrent ? 'current' : 'pending'}`}>{isComplete ? '✋“' : phase.num}</div>
+                    <div className={`phase-num ${isComplete ? 'complete' : isCurrent ? 'current' : 'pending'}`}>{isComplete ? 'âœ“' : phase.num}</div>
                     <div className="flex-1">
                       <div className={`font-medium ${isComplete ? 'text-green' : isCurrent ? 'text-amber' : 'text-light'}`}>{phase.name}</div>
                       <div className="text-xs text-light">{phase.example}</div>
@@ -2012,7 +1390,7 @@
                 </div>
                 <div className="grid gap-1" style={{gridTemplateColumns: 'repeat(10, 1fr)'}}>
                   {[...Array(10)].map((_, i) => (
-                    <div key={i} className={`phase-box ${player.phase > i + 1 ? 'complete' : player.phase === i + 1 ? 'current' : 'pending'}`}>{player.phase > i + 1 ? '✋“' : i + 1}</div>
+                    <div key={i} className={`phase-box ${player.phase > i + 1 ? 'complete' : player.phase === i + 1 ? 'current' : 'pending'}`}>{player.phase > i + 1 ? 'âœ“' : i + 1}</div>
                   ))}
                 </div>
               </div>
@@ -2023,7 +1401,7 @@
             {players.map(player => (
               <div key={player.id} className="mb-3">
                 <div className="score-entry">
-                  <div className="score-entry-name">{player.name}<span className="score-entry-phase">Phase {player.phase <= 10 ? player.phase : '✋“'}</span></div>
+                  <div className="score-entry-name">{player.name}<span className="score-entry-phase">Phase {player.phase <= 10 ? player.phase : 'âœ“'}</span></div>
                   <button onClick={() => setEditingRoundScore({playerId: player.id, value: roundScores[player.id] || ''})} 
                     className="input input-score" style={{cursor: 'pointer', minWidth: '80px'}}>
                     {roundScores[player.id] || 'â€”'}
@@ -2031,7 +1409,7 @@
                 </div>
                 {player.phase <= 10 && (
                   <button onClick={() => togglePhaseAdvance(player.id)} className={`phase-toggle ${phaseAdvance[player.id] ? 'complete' : 'incomplete'}`}>
-                    {phaseAdvance[player.id] ? `✋“ Completed Phase ${player.phase}` : `Completed Phase ${player.phase}?`}
+                    {phaseAdvance[player.id] ? `âœ“ Completed Phase ${player.phase}` : `Completed Phase ${player.phase}?`}
                   </button>
                 )}
               </div>
@@ -2060,7 +1438,7 @@
       const FarkleReference = () => (
         <div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸŽ² Single Dice</h3>
+            <h3 className="text-white font-semibold mb-3">🎲 Single Dice</h3>
             <div className="grid grid-2 gap-2">
               <div className="score-highlight text-center"><span className="dice text-3xl">âš€</span><div className="text-green font-bold mt-1">100 pts</div></div>
               <div className="score-highlight text-center"><span className="dice text-3xl">âš„</span><div className="text-green font-bold mt-1">50 pts</div></div>
@@ -2068,7 +1446,7 @@
             <div className="score-warning mt-3 text-center"><span className="text-light text-sm">âš ï¸ Single 2, 3, 4, 6 = 0 points!</span></div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸŽ²ðŸŽ²ðŸŽ² Three of a Kind</h3>
+            <h3 className="text-white font-semibold mb-3">🎲🎲🎲 Three of a Kind</h3>
             <div className="score-item"><span className="dice text-lg">âš€âš€âš€</span><span className="text-amber font-bold">1,000</span></div>
             <div className="score-item"><span className="dice text-lg">âšâšâš</span><span className="text-amber font-bold">200</span></div>
             <div className="score-item"><span className="dice text-lg">âš‚âš‚âš‚</span><span className="text-amber font-bold">300</span></div>
@@ -2083,7 +1461,7 @@
             <div className="score-item"><span className="text-white">6 of a Kind</span><span className="text-amber">8Ã— triple</span></div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">✋¨ Special Combos</h3>
+            <h3 className="text-white font-semibold mb-3">âœ¨ Special Combos</h3>
             <div className="score-item"><span className="text-white">Straight 1-6</span><span className="text-amber font-bold">1,500</span></div>
             <div className="score-item"><span className="text-white">Three Pairs</span><span className="text-amber font-bold">1,500</span></div>
             <div className="score-item"><span className="text-white">Two Triplets</span><span className="text-amber font-bold">2,500</span></div>
@@ -2148,7 +1526,7 @@
       const CribbageReference = () => (
         <div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸŽ¯ Pegging Points</h3>
+            <h3 className="text-white font-semibold mb-3">🎯 Pegging Points</h3>
             <p className="text-light text-xs mb-3">Scored during card play</p>
             <div className="score-item"><span className="text-white">15 exactly</span><span className="text-green font-bold">2 pts</span></div>
             <div className="score-item"><span className="text-white">31 exactly</span><span className="text-green font-bold">2 pts</span></div>
@@ -2171,13 +1549,13 @@
           <div className="card">
             <h3 className="text-white font-semibold mb-3">ðŸ’¡ Example 15s</h3>
             <p className="text-light text-sm mb-2">Hand: 5-5-5-J and starter: 5</p>
-            <p className="text-lighter text-sm">• Four 5s = 12 pts (6 pairs)</p>
-            <p className="text-lighter text-sm">• 5+5+5 = 15 (Ã—4 ways) = 8 pts</p>
-            <p className="text-lighter text-sm">• 5+J = 15 (Ã—4 ways) = 8 pts</p>
+            <p className="text-lighter text-sm">â€¢ Four 5s = 12 pts (6 pairs)</p>
+            <p className="text-lighter text-sm">â€¢ 5+5+5 = 15 (Ã—4 ways) = 8 pts</p>
+            <p className="text-lighter text-sm">â€¢ 5+J = 15 (Ã—4 ways) = 8 pts</p>
             <p className="text-green text-sm font-semibold mt-2">Total: 28 pts! (Max without flush)</p>
           </div>
           <div className="card score-warning">
-            <h3 className="text-amber font-semibold mb-2">ðŸ¦¨ Skunk!</h3>
+            <h3 className="text-amber font-semibold mb-2">🦨 Skunk!</h3>
             <p className="text-light text-sm">If winner reaches 121 before loser hits 91, it's a skunk â€” counts as double win!</p>
           </div>
         </div>
@@ -2186,7 +1564,7 @@
       const PitchReference = () => (
         <div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸŽ¯ 10-Point Cards</h3>
+            <h3 className="text-white font-semibold mb-3">🎯 10-Point Cards</h3>
             <p className="text-light text-xs mb-3">Trump suit only</p>
             <div className="score-item"><span className="text-white">Ace (High)</span><span className="text-purple font-bold">1 pt</span></div>
             <div className="score-item"><span className="text-white">Jack</span><span className="text-purple font-bold">1 pt</span></div>
@@ -2198,22 +1576,22 @@
             <div className="score-item"><span className="text-white">2 (Low)</span><span className="text-green font-bold">1 pt â†’ Holder</span></div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸŽ¯ 13-Point (adds)</h3>
+            <h3 className="text-white font-semibold mb-3">🎯 13-Point (adds)</h3>
             <div className="score-item"><span className="text-white">Off-3 (same color)</span><span className="text-amber font-bold">3 pts</span></div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸ“Š Trump Card Rank</h3>
+            <h3 className="text-white font-semibold mb-3">📊 Trump Card Rank</h3>
             <p className="text-lighter text-sm" style={{lineHeight: '1.6'}}>
               A K Q J <span style={{color: '#c4b5fd'}}>Jick</span> <span style={{color: '#fbbf24'}}>Hi🃏 Lo🃏</span> 10 9 8 7 6 5 4 <span style={{color: '#fbbf24'}}>3</span> 2
             </p>
             <p className="text-light text-xs mt-2">Jick = Jack of same color, different suit</p>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸŽ® Call Your Partner</h3>
-            <p className="text-lighter text-sm mb-2">• Bidder calls a trump card</p>
-            <p className="text-lighter text-sm mb-2">• Holder of card is secret partner</p>
-            <p className="text-lighter text-sm mb-2">• If card in deck â†’ bidder vs table!</p>
-            <p className="text-lighter text-sm">• Partners share points won</p>
+            <h3 className="text-white font-semibold mb-3">🎮 Call Your Partner</h3>
+            <p className="text-lighter text-sm mb-2">â€¢ Bidder calls a trump card</p>
+            <p className="text-lighter text-sm mb-2">â€¢ Holder of card is secret partner</p>
+            <p className="text-lighter text-sm mb-2">â€¢ If card in deck â†’ bidder vs table!</p>
+            <p className="text-lighter text-sm">â€¢ Partners share points won</p>
           </div>
           <div className="card score-warning">
             <h3 className="text-amber font-semibold mb-2">ðŸŒ™ Shoot the Moon</h3>
@@ -2229,7 +1607,7 @@
           if (score <= 90) return 3;
           return 4;
         };
-
+        
         const getStreetProgress = (score, street) => {
           const streetStart = (street - 1) * 30;
           const streetEnd = street * 30;
@@ -2240,159 +1618,25 @@
 
         const p1 = players[0];
         const p2 = players[1];
-
-        // Add points to current round (peg or show phase)
-        const addPoints = (playerIndex, points) => {
-          const isP1 = playerIndex === 0;
-          if (cribbageCurrentRound.phase === 'peg' && !cribbageCurrentRound.pegConfirmed) {
-            setCribbageCurrentRound({
-              ...cribbageCurrentRound,
-              [isP1 ? 'player1Peg' : 'player2Peg']: cribbageCurrentRound[isP1 ? 'player1Peg' : 'player2Peg'] + points
-            });
-          } else if (cribbageCurrentRound.phase === 'show' && !cribbageCurrentRound.showConfirmed) {
-            setCribbageCurrentRound({
-              ...cribbageCurrentRound,
-              [isP1 ? 'player1Show' : 'player2Show']: cribbageCurrentRound[isP1 ? 'player1Show' : 'player2Show'] + points
-            });
-          }
-        };
-
-        // Confirm peg phase
-        const confirmPeg = () => {
-          const newP1Total = p1.total + cribbageCurrentRound.player1Peg;
-          const newP2Total = p2.total + cribbageCurrentRound.player2Peg;
-
-          setPlayers(players.map((p, i) => ({
-            ...p,
-            total: i === 0 ? newP1Total : newP2Total
-          })));
-
-          setCribbageCurrentRound({
-            ...cribbageCurrentRound,
-            phase: 'show',
-            pegConfirmed: true
-          });
-
-          // Check for winner
-          if (newP1Total >= 121) {
-            setWinner({...p1, total: newP1Total});
-            setScreen('winner');
-          } else if (newP2Total >= 121) {
-            setWinner({...p2, total: newP2Total});
-            setScreen('winner');
-          }
-        };
-
-        // Confirm show phase and complete round
-        const confirmShow = () => {
-          const newP1Total = p1.total + cribbageCurrentRound.player1Show;
-          const newP2Total = p2.total + cribbageCurrentRound.player2Show;
-
-          setPlayers(players.map((p, i) => ({
-            ...p,
-            total: i === 0 ? newP1Total : newP2Total
-          })));
-
-          // Save round to history
-          setCribbageRounds([...cribbageRounds, {
-            roundNumber: cribbageRounds.length + 1,
-            player1Peg: cribbageCurrentRound.player1Peg,
-            player2Peg: cribbageCurrentRound.player2Peg,
-            player1Show: cribbageCurrentRound.player1Show,
-            player2Show: cribbageCurrentRound.player2Show,
-            total1: newP1Total,
-            total2: newP2Total
-          }]);
-
-          // Reset for next round
-          setCribbageCurrentRound({
-            phase: 'peg',
-            player1Peg: 0,
-            player2Peg: 0,
-            player1Show: 0,
-            player2Show: 0,
-            pegConfirmed: false,
-            showConfirmed: false
-          });
-
-          // Check for winner
-          if (newP1Total >= 121) {
-            setWinner({...p1, total: newP1Total});
-            setScreen('winner');
-          } else if (newP2Total >= 121) {
-            setWinner({...p2, total: newP2Total});
-            setScreen('winner');
-          }
-        };
-
-        // Edit round from history
-        const editRound = (roundIndex) => {
-          const round = cribbageRounds[roundIndex];
-          setEditingCribbage({
-            type: 'round',
-            roundIndex,
-            player1Peg: String(round.player1Peg),
-            player2Peg: String(round.player2Peg),
-            player1Show: String(round.player1Show),
-            player2Show: String(round.player2Show)
-          });
-        };
-
-        // Save edited round
-        const saveRoundEdit = () => {
-          const { roundIndex, player1Peg, player2Peg, player1Show, player2Show } = editingCribbage;
-          const newP1Peg = Math.max(0, parseInt(player1Peg) || 0);
-          const newP2Peg = Math.max(0, parseInt(player2Peg) || 0);
-          const newP1Show = Math.max(0, parseInt(player1Show) || 0);
-          const newP2Show = Math.max(0, parseInt(player2Show) || 0);
-
-          // Recalculate totals from scratch
-          let runningP1 = 0;
-          let runningP2 = 0;
-          const updatedRounds = cribbageRounds.map((r, i) => {
-            if (i === roundIndex) {
-              runningP1 += newP1Peg + newP1Show;
-              runningP2 += newP2Peg + newP2Show;
-              return {
-                ...r,
-                player1Peg: newP1Peg,
-                player2Peg: newP2Peg,
-                player1Show: newP1Show,
-                player2Show: newP2Show,
-                total1: runningP1,
-                total2: runningP2
-              };
-            } else {
-              runningP1 += r.player1Peg + r.player1Show;
-              runningP2 += r.player2Peg + r.player2Show;
-              return {...r, total1: runningP1, total2: runningP2};
-            }
-          });
-
-          setCribbageRounds(updatedRounds);
-          setPlayers(players.map((p, i) => ({
-            ...p,
-            total: i === 0 ? runningP1 : runningP2
-          })));
-          setEditingCribbage(null);
-        };
         
-
         return (
           <div className="cribbage-layout">
             <div className="card cribbage-board-card">
               <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '20px'}}>
                 <div style={{textAlign: 'center'}}>
-                  <div style={{color: '#fca5a5', fontSize: '14px', fontWeight: '600'}}>🔴 {p1?.name}</div>
-                  <div style={{color: 'white', fontSize: '36px', fontWeight: 'bold'}}>{p1?.total || 0}</div>
+                  <div style={{color: '#fca5a5', fontSize: '14px', fontWeight: '600'}}>ðŸ”´ {p1?.name}</div>
+                  <div onClick={() => setEditingCribbage({playerIndex: 0, value: String(p1?.total || 0)})} 
+                    style={{color: 'white', fontSize: '36px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: '4px'}}>{p1?.total || 0}</div>
                   <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>Street {getStreet(p1?.total || 0)}</div>
                 </div>
                 <div style={{textAlign: 'center'}}>
-                  <div style={{color: '#93c5fd', fontSize: '14px', fontWeight: '600'}}>🔵 {p2?.name}</div>
-                  <div style={{color: 'white', fontSize: '36px', fontWeight: 'bold'}}>{p2?.total || 0}</div>
+                  <div style={{color: '#93c5fd', fontSize: '14px', fontWeight: '600'}}>ðŸ”µ {p2?.name}</div>
+                  <div onClick={() => setEditingCribbage({playerIndex: 1, value: String(p2?.total || 0)})}
+                    style={{color: 'white', fontSize: '36px', fontWeight: 'bold', cursor: 'pointer', textDecoration: 'underline', textDecorationStyle: 'dotted', textUnderlineOffset: '4px'}}>{p2?.total || 0}</div>
                   <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>Street {getStreet(p2?.total || 0)}</div>
                 </div>
               </div>
+              <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginBottom: '12px'}}>Tap score to edit</p>
 
               {/* Track - 4 streets */}
               <div style={{marginBottom: '12px'}}>
@@ -2422,7 +1666,7 @@
                   );
                 })}
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '8px', padding: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px'}}>
-                  <span style={{fontSize: '16px'}}>🏁</span>
+                  <span style={{fontSize: '16px'}}>ðŸ</span>
                   <span style={{color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600'}}>121 to win!</span>
                 </div>
               </div>
@@ -2435,146 +1679,54 @@
               )}
             </div>
 
-            {/* Current Round Scoring */}
             <div className="card">
-              <h3 className="text-white font-semibold mb-3 text-center">
-                Round {cribbageRounds.length + 1} - {cribbageCurrentRound.phase === 'peg' ? '🎯 Pegging' : '✋ Show'}
-              </h3>
-
-              {!cribbageCurrentRound.pegConfirmed && (
-                <div style={{marginBottom: '16px'}}>
-                  <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '12px', padding: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px'}}>
-                    <div style={{textAlign: 'center', flex: 1}}>
-                      <div style={{color: '#fca5a5', fontSize: '12px', marginBottom: '4px'}}>🔴 {p1?.name}</div>
-                      <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold'}}>{cribbageCurrentRound.player1Peg}</div>
-                      <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>peg points</div>
-                    </div>
-                    <div style={{textAlign: 'center', flex: 1}}>
-                      <div style={{color: '#93c5fd', fontSize: '12px', marginBottom: '4px'}}>🔵 {p2?.name}</div>
-                      <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold'}}>{cribbageCurrentRound.player2Peg}</div>
-                      <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>peg points</div>
-                    </div>
+              <h3 className="text-white font-semibold mb-3 text-center">Add Points</h3>
+              <div style={{display: 'flex', gap: '12px'}}>
+                {/* Player 1 column */}
+                <div style={{flex: 1, background: 'rgba(220,38,38,0.15)', borderRadius: '12px', padding: '12px'}}>
+                  <div style={{color: '#fca5a5', fontSize: '14px', fontWeight: '600', textAlign: 'center', marginBottom: '10px'}}>ðŸ”´ {p1?.name}</div>
+                  <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
+                    {[1, 2, 3, 4, 6, 8, 12, 15, 24].map(pts => (
+                      <button key={pts} onClick={() => {
+                        const newTotal = p1.total + pts;
+                        if (newTotal >= 121) {
+                          setPlayers(players.map((p, i) => i === 0 ? {...p, total: newTotal, scores: [...p.scores, pts]} : p));
+                          setWinner({...p1, total: newTotal});
+                          setScreen('winner');
+                        } else {
+                          setPlayers(players.map((p, i) => i === 0 ? {...p, total: newTotal, scores: [...p.scores, pts]} : p));
+                        }
+                      }} style={{background: '#dc2626', border: 'none', color: 'white', padding: '12px 0', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer'}}>
+                        +{pts}
+                      </button>
+                    ))}
                   </div>
-
-                  <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
-                    <div style={{flex: 1, background: 'rgba(220,38,38,0.15)', borderRadius: '12px', padding: '12px'}}>
-                      <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔴 {p1?.name}</div>
-                      <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
-                        {[1, 2, 3, 4, 6, 8, 12].map(pts => (
-                          <button key={pts} onClick={() => addPoints(0, pts)}
-                            style={{background: '#dc2626', border: 'none', color: 'white', padding: '10px 0', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'}}>
-                            +{pts}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{flex: 1, background: 'rgba(37,99,235,0.15)', borderRadius: '12px', padding: '12px'}}>
-                      <div style={{color: '#93c5fd', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔵 {p2?.name}</div>
-                      <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
-                        {[1, 2, 3, 4, 6, 8, 12].map(pts => (
-                          <button key={pts} onClick={() => addPoints(1, pts)}
-                            style={{background: '#2563eb', border: 'none', color: 'white', padding: '10px 0', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'}}>
-                            +{pts}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button onClick={confirmPeg} disabled={cribbageCurrentRound.player1Peg === 0 && cribbageCurrentRound.player2Peg === 0}
-                    style={{width: '100%', padding: '12px', background: '#047857', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', opacity: (cribbageCurrentRound.player1Peg === 0 && cribbageCurrentRound.player2Peg === 0) ? 0.5 : 1}}>
-                    ✓ Confirm Pegging
-                  </button>
                 </div>
-              )}
-
-              {cribbageCurrentRound.pegConfirmed && !cribbageCurrentRound.showConfirmed && (
-                <div style={{marginBottom: '16px'}}>
-                  <div style={{display: 'flex', justifyContent: 'space-between', marginBottom: '12px', padding: '12px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px'}}>
-                    <div style={{textAlign: 'center', flex: 1}}>
-                      <div style={{color: '#fca5a5', fontSize: '12px', marginBottom: '4px'}}>🔴 {p1?.name}</div>
-                      <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold'}}>{cribbageCurrentRound.player1Show}</div>
-                      <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>show points</div>
-                    </div>
-                    <div style={{textAlign: 'center', flex: 1}}>
-                      <div style={{color: '#93c5fd', fontSize: '12px', marginBottom: '4px'}}>🔵 {p2?.name}</div>
-                      <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold'}}>{cribbageCurrentRound.player2Show}</div>
-                      <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '11px'}}>show points</div>
-                    </div>
+                
+                {/* Player 2 column */}
+                <div style={{flex: 1, background: 'rgba(37,99,235,0.15)', borderRadius: '12px', padding: '12px'}}>
+                  <div style={{color: '#93c5fd', fontSize: '14px', fontWeight: '600', textAlign: 'center', marginBottom: '10px'}}>ðŸ”µ {p2?.name}</div>
+                  <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
+                    {[1, 2, 3, 4, 6, 8, 12, 15, 24].map(pts => (
+                      <button key={pts} onClick={() => {
+                        const newTotal = p2.total + pts;
+                        if (newTotal >= 121) {
+                          setPlayers(players.map((p, i) => i === 1 ? {...p, total: newTotal, scores: [...p.scores, pts]} : p));
+                          setWinner({...p2, total: newTotal});
+                          setScreen('winner');
+                        } else {
+                          setPlayers(players.map((p, i) => i === 1 ? {...p, total: newTotal, scores: [...p.scores, pts]} : p));
+                        }
+                      }} style={{background: '#2563eb', border: 'none', color: 'white', padding: '12px 0', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer'}}>
+                        +{pts}
+                      </button>
+                    ))}
                   </div>
-
-                  <div style={{display: 'flex', gap: '12px', marginBottom: '12px'}}>
-                    <div style={{flex: 1, background: 'rgba(220,38,38,0.15)', borderRadius: '12px', padding: '12px'}}>
-                      <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔴 {p1?.name}</div>
-                      <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
-                        {[1, 2, 4, 8, 12, 15, 24].map(pts => (
-                          <button key={pts} onClick={() => addPoints(0, pts)}
-                            style={{background: '#dc2626', border: 'none', color: 'white', padding: '10px 0', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'}}>
-                            +{pts}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                    <div style={{flex: 1, background: 'rgba(37,99,235,0.15)', borderRadius: '12px', padding: '12px'}}>
-                      <div style={{color: '#93c5fd', fontSize: '12px', fontWeight: '600', textAlign: 'center', marginBottom: '8px'}}>🔵 {p2?.name}</div>
-                      <div className="cribbage-points-grid" style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px'}}>
-                        {[1, 2, 4, 8, 12, 15, 24].map(pts => (
-                          <button key={pts} onClick={() => addPoints(1, pts)}
-                            style={{background: '#2563eb', border: 'none', color: 'white', padding: '10px 0', borderRadius: '8px', fontSize: '14px', fontWeight: '600', cursor: 'pointer'}}>
-                            +{pts}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <button onClick={confirmShow} disabled={cribbageCurrentRound.player1Show === 0 && cribbageCurrentRound.player2Show === 0}
-                    style={{width: '100%', padding: '12px', background: '#047857', color: 'white', border: 'none', borderRadius: '8px', fontSize: '16px', fontWeight: '600', cursor: 'pointer', opacity: (cribbageCurrentRound.player1Show === 0 && cribbageCurrentRound.player2Show === 0) ? 0.5 : 1}}>
-                    ✓ Confirm Show & Complete Round
-                  </button>
-                </div>
-              )}
-
-              <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginTop: '8px'}}>
-                {cribbageCurrentRound.phase === 'peg' ? '+1 go/last • +2 pair/15/31 • +3 run • +6 trips • +12 quads' : 'Each 15=2 • Pairs=2 • Run=1/card • Flush=4/5 • Nobs=1'}
-              </p>
-            </div>
-
-            {/* Round History */}
-            {cribbageRounds.length > 0 && (
-              <div className="card" style={{gridColumn: '1 / -1'}}>
-                <h3 className="text-white font-semibold mb-3">📋 Round History</h3>
-                <div style={{maxHeight: '300px', overflowY: 'auto'}}>
-                  {cribbageRounds.slice().reverse().map((round, i) => {
-                    const actualIndex = cribbageRounds.length - 1 - i;
-                    return (
-                      <div key={actualIndex} style={{marginBottom: '12px', padding: '12px', background: 'rgba(255,255,255,0.08)', borderRadius: '8px'}}>
-                        <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
-                          <div style={{color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600'}}>Round {round.roundNumber}</div>
-                          <button onClick={() => editRound(actualIndex)}
-                            style={{background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', cursor: 'pointer'}}>
-                            ✏️ Edit
-                          </button>
-                        </div>
-                        <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
-                          <div>
-                            <div style={{color: '#fca5a5', fontSize: '11px', marginBottom: '4px'}}>🔴 {p1?.name}</div>
-                            <div style={{color: 'rgba(255,255,255,0.9)', fontSize: '13px'}}>Peg: {round.player1Peg} • Show: {round.player1Show}</div>
-                            <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '12px'}}>Total: {round.total1}</div>
-                          </div>
-                          <div>
-                            <div style={{color: '#93c5fd', fontSize: '11px', marginBottom: '4px'}}>🔵 {p2?.name}</div>
-                            <div style={{color: 'rgba(255,255,255,0.9)', fontSize: '13px'}}>Peg: {round.player2Peg} • Show: {round.player2Show}</div>
-                            <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '12px'}}>Total: {round.total2}</div>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
                 </div>
               </div>
-            )}
-
+              <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginTop: '10px'}}>+1 go/last â€¢ +2 pair/15/31 â€¢ +3 run â€¢ +6 trips â€¢ +12 quads â€¢ +24 max hand</p>
+            </div>
+            
             {/* Inline reference - shown on tablets */}
             <div className="tablet-only">
               <div className="card">
@@ -2650,13 +1802,13 @@
                       style={{padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                         background: pitchConfig.gameMode === 'teams' ? '#7c3aed' : 'rgba(255,255,255,0.2)',
                         color: 'white', fontWeight: '600', fontSize: '14px'}}>
-                      ðŸ‘¥ Teams
+                      👥 Teams
                     </button>
                     <button onClick={() => setPitchConfig({...pitchConfig, gameMode: 'callPartner'})}
                       style={{padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                         background: pitchConfig.gameMode === 'callPartner' ? '#7c3aed' : 'rgba(255,255,255,0.2)',
                         color: 'white', fontWeight: '600', fontSize: '14px'}}>
-                      ðŸŽ¯ Call Your Partner
+                      🎯 Call Your Partner
                     </button>
                     <button onClick={() => setPitchConfig({...pitchConfig, gameMode: 'cutthroat'})}
                       style={{padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -2935,7 +2087,7 @@
                       {pitchHand.isMoon ? (
                         pitchHand.pointsWon === pointSys.total ? 'ðŸŒ™ Moon made!' : 'ðŸŒ™ Moon missed!'
                       ) : (
-                        pitchHand.pointsWon >= pitchHand.bidAmount ? '✋“ Made bid!' : '✋— Set!'
+                        pitchHand.pointsWon >= pitchHand.bidAmount ? 'âœ“ Made bid!' : 'âœ— Set!'
                       )}
                     </p>
                   )}
@@ -3166,25 +2318,6 @@
               </div>
             )}
 
-            {/* Group Selector */}
-            {firebaseConfigured && currentUser && (
-              <div className="mb-4">
-                <select
-                  value={selectedGroupId || ''}
-                  onChange={(e) => switchToGroup(e.target.value)}
-                  className="input group-selector w-full"
-                  style={{fontSize: '14px', padding: '10px 12px'}}
-                >
-                  <option value="">No Group Selected</option>
-                  {currentGroups.map(group => (
-                    <option key={group.id} value={group.id}>
-                      {group.name} ({group.memberCount} {group.memberCount === 1 ? 'member' : 'members'})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             <div className="text-center mb-8 pt-8">
               <h1 className="text-4xl font-bold text-white mb-2"><img src="./icon-192.png" alt="" style={{width: '40px', height: '40px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', borderRadius: '8px'}} />Game Night</h1>
               <p className="text-light mb-1">Score Keeper</p>
@@ -3194,21 +2327,7 @@
                 <p className="text-xs mt-2" style={{color: '#22c55e'}}>☁️ Signed in - Ready for cloud sync</p>
               )}
             </div>
-
-            {/* Manage Groups Button */}
-            {firebaseConfigured && currentUser && (
-              <button onClick={() => setShowGroupManager(true)} className="w-full mb-4" style={{background: 'linear-gradient(135deg, #581c87 0%, #7c3aed 100%)', border: 'none', borderRadius: '16px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
-                <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                  <span style={{fontSize: '32px'}}>👥</span>
-                  <div style={{textAlign: 'left'}}>
-                    <div style={{color: 'white', fontSize: '18px', fontWeight: 'bold'}}>Manage Groups</div>
-                    <div style={{color: 'rgba(255,255,255,0.8)', fontSize: '13px'}}>Create, join, and switch groups</div>
-                  </div>
-                </div>
-                <span style={{color: 'rgba(255,255,255,0.5)', fontSize: '24px'}}>→</span>
-              </button>
-            )}
-
+            
             <button onClick={() => setShowLeaderboard(true)} className="w-full mb-6" style={{background: 'linear-gradient(135deg, #78350f 0%, #d97706 100%)', border: 'none', borderRadius: '16px', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
               <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
                 <span style={{fontSize: '32px'}}>🏆</span>
@@ -3230,9 +2349,9 @@
                 </div>
               ))}
             </div>
-            <p className="text-center text-light text-sm mt-8">ðŸ“± Add to home screen for offline use!</p>
+            <p className="text-center text-light text-sm mt-8">📱 Add to home screen for offline use!</p>
             {firebaseConfigured && !currentUser && !authLoading && (
-              <p className="text-center text-xs mt-2" style={{color: '#22c55e'}}>☁️ Sign in to unlock player groups and cloud sync</p>
+              <p className="text-center text-xs mt-2" style={{color: '#22c55e'}}>☁️ Cloud sync available - Sign in to enable</p>
             )}
             <p className="text-center text-xs mt-4" style={{color: 'rgba(255,255,255,0.4)', lineHeight: '1.4'}}>
               YahtzeeÂ® is a trademark of Hasbro. Phase 10Â® is a trademark of Mattel.<br/>
@@ -3246,7 +2365,7 @@
         <div className={`app bg-${game.color}`} style={{paddingBottom: '24px'}}>
           <div className="container">
             <div className="flex justify-between items-center mb-4">
-              <button onClick={confirmGoHome} className="text-white" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>â† Back</button>
+              <button onClick={confirmGoHome} className="text-white" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
               <button onClick={() => setShowRules(true)} className="rules-btn">ðŸ“– Rules</button>
             </div>
             <div className="text-center mb-6">
@@ -3258,7 +2377,7 @@
             {/* Saved Players */}
             {savedPlayersList.length > 0 && (
               <div className="card mb-4">
-                <h2 className="text-lg font-semibold text-white mb-3">ðŸ‘¥ Saved Players</h2>
+                <h2 className="text-lg font-semibold text-white mb-3">👥 Saved Players</h2>
                 <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px'}}>
                   {savedPlayersList.map(name => {
                     const inGame = players.find(p => p.name === name);
@@ -3270,7 +2389,7 @@
                           color: inGame ? '#86efac' : 'white', fontSize: '14px', fontWeight: '500',
                           display: 'flex', alignItems: 'center', gap: '6px'
                         }}>
-                        {inGame && <span>✋“</span>}
+                        {inGame && <span>âœ“</span>}
                         {name}
                       </button>
                     );
@@ -3296,14 +2415,14 @@
             
             {/* Current Players */}
             <div className="card mt-4">
-              <h2 className="text-lg font-semibold text-white mb-3">ðŸŽ® Playing This Game</h2>
+              <h2 className="text-lg font-semibold text-white mb-3">🎮 Playing This Game</h2>
               {players.length === 0 ? (
                 <p className="text-light text-center" style={{opacity: 0.7}}>No players added yet</p>
               ) : (
                 players.map((player, i) => (
                   <div key={player.id} className="player-item">
                     <span className="text-white"><span className="text-light mr-2">{i + 1}.</span>{player.name}</span>
-                    <button onClick={() => removePlayer(player.id)} className="remove-btn">✋•</button>
+                    <button onClick={() => removePlayer(player.id)} className="remove-btn">âœ•</button>
                   </div>
                 ))
               )}
