@@ -1329,7 +1329,7 @@
                   <button onClick={() => fileInputRef.current?.click()} className="btn btn-primary flex-1 text-sm">â¬†ï¸ Import</button>
                   <input ref={fileInputRef} type="file" accept=".csv,.json" onChange={importData} style={{display: 'none'}} />
                 </div>
-                <button onClick={clearWins} className="btn w-full text-sm" style={{background: 'rgba(239,68,68,0.3)', color: '#fca5a5'}}>ðŸ—‘ï¸ Clear All Wins</button>
+                <button onClick={clearWins} className="btn w-full text-sm" style={{background: 'rgba(239,68,68,0.3)', color: '#fca5a5'}}>Clear All Wins</button>
               </div>
 
               <p className="text-center text-xs mt-4" style={{color: 'rgba(255,255,255,0.4)'}}>
@@ -1454,7 +1454,7 @@
                 <span className="text-white text-2xl font-bold">{currentPlayer?.total || 0}</span>
               </div>
             </div>
-            <p className="text-light text-xs text-center mt-2">ðŸ’¡ Tap any filled score to edit it</p>
+            <p className="text-light text-xs text-center mt-2">Tip: Tap any filled score to edit it</p>
           </div>
         );
       };
@@ -1667,7 +1667,7 @@
             <div className="score-item"><span className="text-white">Nobs (J of starter suit)</span><span className="text-amber font-bold">1 pt</span></div>
           </div>
           <div className="card">
-            <h3 className="text-white font-semibold mb-3">ðŸ’¡ Example 15s</h3>
+            <h3 className="text-white font-semibold mb-3">Example 15s</h3>
             <p className="text-light text-sm mb-2">Hand: 5-5-5-J and starter: 5</p>
             <p className="text-lighter text-sm">â€¢ Four 5s = 12 pts (6 pairs)</p>
             <p className="text-lighter text-sm">â€¢ 5+5+5 = 15 (Ã—4 ways) = 8 pts</p>
@@ -1714,7 +1714,7 @@
             <p className="text-lighter text-sm">â€¢ Partners share points won</p>
           </div>
           <div className="card score-warning">
-            <h3 className="text-amber font-semibold mb-2">ðŸŒ™ Shoot the Moon</h3>
+            <h3 className="text-amber font-semibold mb-2">Shoot the Moon</h3>
             <p className="text-light text-sm">Bid to take ALL points. High risk, high reward!</p>
           </div>
         </div>
@@ -2191,7 +2191,7 @@
                       style={{padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                         background: pitchConfig.gameMode === 'cutthroat' ? '#7c3aed' : 'rgba(255,255,255,0.2)',
                         color: 'white', fontWeight: '600', fontSize: '14px'}}>
-                      ðŸ”ª Cutthroat
+                      Cutthroat
                     </button>
                   </div>
                 </div>
@@ -2217,7 +2217,7 @@
                 </div>
                 
                 <div style={{marginBottom: '16px'}}>
-                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>ðŸŒ™ Shoot the Moon - Success</label>
+                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>Shoot the Moon - Success</label>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px'}}>
                     <button onClick={() => setPitchConfig({...pitchConfig, moonReward: 'double'})}
                       style={{padding: '10px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -2259,7 +2259,7 @@
                 </div>
                 
                 <div style={{marginBottom: '16px'}}>
-                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>ðŸŒ™ Shoot the Moon - Miss</label>
+                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>Shoot the Moon - Miss</label>
                   <div style={{display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '8px'}}>
                     <button onClick={() => setPitchConfig({...pitchConfig, moonPenalty: 'set'})}
                       style={{padding: '10px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -2375,7 +2375,7 @@
             
             {/* Hand Entry */}
             <div className="card">
-              <h3 className="text-white font-semibold mb-3">ðŸ“ Record Hand</h3>
+              <h3 className="text-white font-semibold mb-3">Record Hand</h3>
               
               {/* Dealer */}
               <div style={{marginBottom: '12px'}}>
@@ -2423,7 +2423,7 @@
                       style={{padding: '8px 14px', borderRadius: '8px', border: 'none', cursor: 'pointer',
                         background: pitchHand.isMoon ? '#fbbf24' : 'rgba(255,255,255,0.15)',
                         color: pitchHand.isMoon ? 'black' : 'white', fontSize: '14px', fontWeight: '600'}}>
-                      ðŸŒ™ Moon
+                      Moon
                     </button>
                   </div>
                 </div>
@@ -2476,7 +2476,7 @@
                   {pitchHand.pointsWon !== undefined && (
                     <p style={{marginTop: '8px', color: (pitchHand.isMoon ? pitchHand.pointsWon === pointSys.total : pitchHand.pointsWon >= pitchHand.bidAmount) ? '#86efac' : '#fca5a5', fontSize: '13px', fontWeight: '600'}}>
                       {pitchHand.isMoon ? (
-                        pitchHand.pointsWon === pointSys.total ? 'ðŸŒ™ Moon made!' : 'ðŸŒ™ Moon missed!'
+                        pitchHand.pointsWon === pointSys.total ? 'Moon made!' : 'Moon missed!'
                       ) : (
                         pitchHand.pointsWon >= pitchHand.bidAmount ? 'âœ“ Made bid!' : 'âœ— Set!'
                       )}
@@ -2860,7 +2860,7 @@
                   {savedPlayersList.map(name => (
                     <div key={name} className="player-item" style={{marginBottom: '4px'}}>
                       <span className="text-white">{name}</span>
-                      <button onClick={() => removeSavedPlayer(name)} className="remove-btn" title="Remove from saved">ðŸ—‘ï¸</button>
+                      <button onClick={() => removeSavedPlayer(name)} className="remove-btn" title="Remove from saved">🗑</button>
                     </div>
                   ))}
                 </div>
