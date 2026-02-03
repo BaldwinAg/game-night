@@ -2366,31 +2366,53 @@
                       style={{flex: 1, background: 'rgba(124,58,237,0.2)', borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer'}}>
                       <div style={{color: '#c4b5fd', fontSize: '12px', marginBottom: '4px'}}>Team 1</div>
                       <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold', textDecoration: 'underline', textDecorationStyle: 'dotted'}}>{team1Score}</div>
-                      <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '11px'}}>{team1Names}</div>
+                      <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '11px'}}>
+                        {team1Players.map((p, idx) => (
+                          <span key={p.id}>
+                            {p.name}
+                            {players.findIndex(pl => pl.id === p.id) === pitchHand.dealerIndex && <span style={{color: '#fbbf24', fontWeight: 'bold'}}> 🃏</span>}
+                            {idx < team1Players.length - 1 && ' & '}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                     <div onClick={() => setEditingPitch({team: 2, value: String(team2Score)})}
                       style={{flex: 1, background: 'rgba(236,72,153,0.2)', borderRadius: '12px', padding: '12px', textAlign: 'center', cursor: 'pointer'}}>
                       <div style={{color: '#f9a8d4', fontSize: '12px', marginBottom: '4px'}}>Team 2</div>
                       <div style={{color: 'white', fontSize: '24px', fontWeight: 'bold', textDecoration: 'underline', textDecorationStyle: 'dotted'}}>{team2Score}</div>
-                      <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '11px'}}>{team2Names}</div>
+                      <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '11px'}}>
+                        {team2Players.map((p, idx) => (
+                          <span key={p.id}>
+                            {p.name}
+                            {players.findIndex(pl => pl.id === p.id) === pitchHand.dealerIndex && <span style={{color: '#fbbf24', fontWeight: 'bold'}}> 🃏</span>}
+                            {idx < team2Players.length - 1 && ' & '}
+                          </span>
+                        ))}
+                      </div>
                     </div>
                   </div>
                   <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '10px'}}>Tap score to edit</p>
                 </div>
               ) : (
                 <div>
-                  {sortedPlayers.map((player, index) => (
-                    <div key={player.id} onClick={() => setEditingPitch({playerIndex: players.findIndex(p => p.id === player.id), value: String(player.total)})}
-                      className={`standing-item ${index === 0 && player.total > 0 ? 'leader' : ''}`} style={{cursor: 'pointer'}}>
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="flex items-center gap-3">
-                          <span className={`rank ${index === 0 && player.total > 0 ? 'leader' : ''}`}>{index + 1}</span>
-                          <span className="text-white font-medium">{player.name}</span>
+                  {sortedPlayers.map((player, index) => {
+                    const isDealer = players.findIndex(p => p.id === player.id) === pitchHand.dealerIndex;
+                    return (
+                      <div key={player.id} onClick={() => setEditingPitch({playerIndex: players.findIndex(p => p.id === player.id), value: String(player.total)})}
+                        className={`standing-item ${index === 0 && player.total > 0 ? 'leader' : ''}`} style={{cursor: 'pointer'}}>
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-3">
+                            <span className={`rank ${index === 0 && player.total > 0 ? 'leader' : ''}`}>{index + 1}</span>
+                            <span className="text-white font-medium">
+                              {player.name}
+                              {isDealer && <span style={{color: '#fbbf24', marginLeft: '6px', fontWeight: 'bold'}}>🃏</span>}
+                            </span>
+                          </div>
+                          <span className="text-white text-xl font-bold" style={{textDecoration: 'underline', textDecorationStyle: 'dotted'}}>{player.total}</span>
                         </div>
-                        <span className="text-white text-xl font-bold" style={{textDecoration: 'underline', textDecorationStyle: 'dotted'}}>{player.total}</span>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                   <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.4)', fontSize: '10px', marginTop: '8px'}}>Tap score to edit</p>
                 </div>
               )}
