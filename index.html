@@ -423,9 +423,9 @@
             "  â€¢ Three 6s = 600 points",
             "",
             "FOUR+ OF A KIND:",
-            "  â€¢ 4 of a kind = 2Ã— the triple value",
-            "  â€¢ 5 of a kind = 4Ã— the triple value",
-            "  â€¢ 6 of a kind = 8Ã— the triple value",
+            "  â€¢ 4 of a kind = 2Ã- the triple value",
+            "  â€¢ 5 of a kind = 4Ã- the triple value",
+            "  â€¢ 6 of a kind = 8Ã- the triple value",
             "",
             "SPECIAL COMBOS:",
             "  â€¢ Straight (1-2-3-4-5-6) = 1,500 points",
@@ -1207,10 +1207,10 @@
                 You have saved house rules. Would you like to use them?
               </div>
               <div style={{background: 'rgba(255,255,255,0.1)', borderRadius: '8px', padding: '12px', marginBottom: '16px', fontSize: '13px', color: 'rgba(255,255,255,0.9)'}}>
-                <div>• Point System: <strong>{savedHouseRules.pointSystem}-Point</strong></div>
-                <div>• Target Score: <strong>{savedHouseRules.customTarget || savedHouseRules.targetScore}</strong></div>
-                <div>• Moon Success: <strong>{savedHouseRules.moonReward === 'double' ? 'Double Points' : savedHouseRules.moonReward === 'autoWin' ? 'Auto-Win' : savedHouseRules.moonReward === 'fixed' ? `+${savedHouseRules.moonRewardValue} pts` : `Go to ${savedHouseRules.moonRewardValue}`}</strong></div>
-                <div>• Moon Miss: <strong>{savedHouseRules.moonPenalty === 'set' ? 'Lose Bid' : savedHouseRules.moonPenalty === 'fixed' ? `-${savedHouseRules.moonPenaltyValue} pts` : savedHouseRules.moonPenalty === 'zero' ? 'Go to Zero' : 'Lose Game'}</strong></div>
+                <div>* Point System: <strong>{savedHouseRules.pointSystem}-Point</strong></div>
+                <div>* Target Score: <strong>{savedHouseRules.customTarget || savedHouseRules.targetScore}</strong></div>
+                <div>* Moon Success: <strong>{savedHouseRules.moonReward === 'double' ? 'Double Points' : savedHouseRules.moonReward === 'autoWin' ? 'Auto-Win' : savedHouseRules.moonReward === 'fixed' ? `+${savedHouseRules.moonRewardValue} pts` : `Go to ${savedHouseRules.moonRewardValue}`}</strong></div>
+                <div>* Moon Miss: <strong>{savedHouseRules.moonPenalty === 'set' ? 'Lose Bid' : savedHouseRules.moonPenalty === 'fixed' ? `-${savedHouseRules.moonPenaltyValue} pts` : savedHouseRules.moonPenalty === 'zero' ? 'Go to Zero' : 'Lose Game'}</strong></div>
               </div>
               <div className="modal-buttons">
                 <button className="btn btn-cancel" onClick={setNewRules}>Set New Rules</button>
@@ -1325,8 +1325,8 @@
                 <h3 className="text-white font-semibold mb-3">📦 Backup & Restore</h3>
                 <p className="text-light text-sm mb-3">Export as CSV for Excel/Sheets, or restore from a backup file.</p>
                 <div className="flex gap-2 mb-3">
-                  <button onClick={exportData} className="btn btn-primary flex-1 text-sm">â¬‡ï¸ Export</button>
-                  <button onClick={() => fileInputRef.current?.click()} className="btn btn-primary flex-1 text-sm">â¬†ï¸ Import</button>
+                  <button onClick={exportData} className="btn btn-primary flex-1 text-sm">Export</button>
+                  <button onClick={() => fileInputRef.current?.click()} className="btn btn-primary flex-1 text-sm">Import</button>
                   <input ref={fileInputRef} type="file" accept=".csv,.json" onChange={importData} style={{display: 'none'}} />
                 </div>
                 <button onClick={clearWins} className="btn w-full text-sm" style={{background: 'rgba(239,68,68,0.3)', color: '#fca5a5'}}>Clear All Wins</button>
@@ -1334,7 +1334,7 @@
 
               <p className="text-center text-xs mt-4" style={{color: 'rgba(255,255,255,0.4)'}}>
                 Wins are saved on this device. Use Export to backup.<br/>
-                Version {APP_VERSION} {firebaseConfigured ? '• Cloud Sync Ready' : '• Local Mode'}
+                Version {APP_VERSION} {firebaseConfigured ? '* Cloud Sync Ready' : '* Local Mode'}
               </p>
             </div>
           </div>
@@ -1377,7 +1377,7 @@
             <div className="score-highlight mt-2">
               <div className="flex justify-between mb-2"><span className="text-white font-medium">Large Straight</span><span className="text-amber font-bold">40 pts</span></div>
               <p className="text-light text-sm mb-2">All 5 in sequence</p>
-              <div className="text-xs text-light">âœ“ 1-2-3-4-5 &nbsp; âœ“ 2-3-4-5-6<br/>âœ— 1-2-3-5-6 (missing 4)</div>
+              <div className="text-xs text-light">âœ“ 1-2-3-4-5 &nbsp; âœ“ 2-3-4-5-6<br/>âœ- 1-2-3-5-6 (missing 4)</div>
             </div>
           </div>
         </div>
@@ -1443,7 +1443,7 @@
                 </div>
                 <div className="flex gap-2">
                   <input type="text" inputMode="numeric" value={scoreInput} onChange={(e) => setScoreInput(e.target.value)} placeholder="0" className="input input-score flex-1" style={{fontSize: '20px'}} autoFocus />
-                  <button onClick={submitYahtzeeScore} className="btn accent-amber text-white">âœ“</button>
+                  <button onClick={submitYahtzeeScore} className="btn accent-amber text-white">OK</button>
                 </div>
                 <button onClick={() => { setSelectedCategory(null); setScoreInput(''); }} className="btn btn-primary w-full mt-2 text-sm" style={{padding: '8px'}}>Cancel</button>
               </div>
@@ -1576,9 +1576,9 @@
           </div>
           <div className="card">
             <h3 className="text-white font-semibold mb-3">4+ of a Kind</h3>
-            <div className="score-item"><span className="text-white">4 of a Kind</span><span className="text-amber">2Ã— triple</span></div>
-            <div className="score-item"><span className="text-white">5 of a Kind</span><span className="text-amber">4Ã— triple</span></div>
-            <div className="score-item"><span className="text-white">6 of a Kind</span><span className="text-amber">8Ã— triple</span></div>
+            <div className="score-item"><span className="text-white">4 of a Kind</span><span className="text-amber">2Ã- triple</span></div>
+            <div className="score-item"><span className="text-white">5 of a Kind</span><span className="text-amber">4Ã- triple</span></div>
+            <div className="score-item"><span className="text-white">6 of a Kind</span><span className="text-amber">8Ã- triple</span></div>
           </div>
           <div className="card">
             <h3 className="text-white font-semibold mb-3">âœ¨ Special Combos</h3>
@@ -1670,8 +1670,8 @@
             <h3 className="text-white font-semibold mb-3">Example 15s</h3>
             <p className="text-light text-sm mb-2">Hand: 5-5-5-J and starter: 5</p>
             <p className="text-lighter text-sm">â€¢ Four 5s = 12 pts (6 pairs)</p>
-            <p className="text-lighter text-sm">â€¢ 5+5+5 = 15 (Ã—4 ways) = 8 pts</p>
-            <p className="text-lighter text-sm">â€¢ 5+J = 15 (Ã—4 ways) = 8 pts</p>
+            <p className="text-lighter text-sm">â€¢ 5+5+5 = 15 (Ã-4 ways) = 8 pts</p>
+            <p className="text-lighter text-sm">â€¢ 5+J = 15 (Ã-4 ways) = 8 pts</p>
             <p className="text-green text-sm font-semibold mt-2">Total: 28 pts! (Max without flush)</p>
           </div>
           <div className="card score-warning">
@@ -2064,7 +2064,7 @@
               )}
 
               <p style={{textAlign: 'center', color: 'rgba(255,255,255,0.5)', fontSize: '10px', marginTop: '8px'}}>
-                {cribbageCurrentRound.phase === 'peg' ? '+1 go/last • +2 pair/15/31 • +3 run • +6 trips • +12 quads' : 'Each 15=2 • Pairs=2 • Run=1/card • Flush=4/5 • Nobs=1'}
+                {cribbageCurrentRound.phase === 'peg' ? '+1 go/last * +2 pair/15/31 * +3 run * +6 trips * +12 quads' : 'Each 15=2 * Pairs=2 * Run=1/card * Flush=4/5 * Nobs=1'}
               </p>
             </div>
 
@@ -2087,12 +2087,12 @@
                         <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px'}}>
                           <div>
                             <div style={{color: '#fca5a5', fontSize: '11px', marginBottom: '4px'}}>🔴 {p1?.name}</div>
-                            <div style={{color: 'rgba(255,255,255,0.9)', fontSize: '13px'}}>Peg: {round.player1Peg} • Show: {round.player1Show}</div>
+                            <div style={{color: 'rgba(255,255,255,0.9)', fontSize: '13px'}}>Peg: {round.player1Peg} * Show: {round.player1Show}</div>
                             <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '12px'}}>Total: {round.total1}</div>
                           </div>
                           <div>
                             <div style={{color: '#93c5fd', fontSize: '11px', marginBottom: '4px'}}>🔵 {p2?.name}</div>
-                            <div style={{color: 'rgba(255,255,255,0.9)', fontSize: '13px'}}>Peg: {round.player2Peg} • Show: {round.player2Show}</div>
+                            <div style={{color: 'rgba(255,255,255,0.9)', fontSize: '13px'}}>Peg: {round.player2Peg} * Show: {round.player2Show}</div>
                             <div style={{color: 'rgba(255,255,255,0.6)', fontSize: '12px'}}>Total: {round.total2}</div>
                           </div>
                         </div>
@@ -2478,7 +2478,7 @@
                       {pitchHand.isMoon ? (
                         pitchHand.pointsWon === pointSys.total ? 'Moon made!' : 'Moon missed!'
                       ) : (
-                        pitchHand.pointsWon >= pitchHand.bidAmount ? 'âœ“ Made bid!' : 'âœ— Set!'
+                        pitchHand.pointsWon >= pitchHand.bidAmount ? 'âœ“ Made bid!' : 'âœ- Set!'
                       )}
                     </p>
                   )}
@@ -2728,7 +2728,7 @@
                   <p className="text-sm" style={{color: 'rgba(255,255,255,0.8)'}}>See who's winning the most</p>
                 </div>
               </div>
-              <span style={{color: 'white', fontSize: '24px'}}>→</span>
+              <span style={{color: 'white', fontSize: '24px'}}>-></span>
             </button>
             <div className="game-cards-grid">
               {Object.entries(GAMES).map(([key, g]) => (
@@ -2793,10 +2793,10 @@
             
             {/* Add New Player */}
             <div className="card">
-              <h2 className="text-lg font-semibold text-white mb-3">âž• Add Player</h2>
-              {selectedGame === 'pitch' && pitchConfig.gameMode === 'teams' && (
+              <h2 className="text-lg font-semibold text-white mb-3"> Add Player</h2>
+              {selectedGame === 'pitch' && (
                 <div style={{marginBottom: '12px'}}>
-                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>Select Team</label>
+                  <label className="text-light text-sm mb-2" style={{display: 'block'}}>Select Team (for Teams mode)</label>
                   <div style={{display: 'flex', gap: '8px'}}>
                     <button onClick={() => setPlayerTeamSelection(1)}
                       style={{flex: 1, padding: '10px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer',
@@ -2835,7 +2835,7 @@
                     <span className="text-white">
                       <span className="text-light mr-2">{i + 1}.</span>
                       {player.name}
-                      {selectedGame === 'pitch' && pitchConfig.gameMode === 'teams' && player.team && (
+                      {selectedGame === 'pitch' && player.team && (
                         <span style={{
                           marginLeft: '8px', padding: '2px 8px', borderRadius: '10px', fontSize: '11px', fontWeight: '600',
                           background: player.team === 1 ? '#7c3aed' : '#ec4899',
@@ -2845,7 +2845,7 @@
                         </span>
                       )}
                     </span>
-                    <button onClick={() => removePlayer(player.id)} className="remove-btn">âœ•</button>
+                    <button onClick={() => removePlayer(player.id)} className="remove-btn">X</button>
               )}
               <p className="text-lighter text-sm mt-3 text-center">{players.length < game.minPlayers ? `Add at least ${game.minPlayers} players` : `${players.length}/${game.maxPlayers} players`}</p>
             </div>
