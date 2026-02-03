@@ -510,7 +510,7 @@
       ],
       lower: [
         { key: 'threeKind', name: '3 of a Kind', icon: '🎲' }, { key: 'fourKind', name: '4 of a Kind', icon: '🎲' },
-        { key: 'fullHouse', name: 'Full House', icon: 'ðŸ ' }, { key: 'smallStraight', name: 'Sm Straight', icon: '📈' },
+        { key: 'fullHouse', name: 'Full House', icon: '🏠' }, { key: 'smallStraight', name: 'Sm Straight', icon: '📈' },
         { key: 'largeStraight', name: 'Lg Straight', icon: '📈' }, { key: 'yahtzee', name: 'YAHTZEE', icon: '🌟' },
         { key: 'chance', name: 'Chance', icon: 'â“' },
       ]
@@ -949,7 +949,7 @@
       const HomeConfirmModal = () => (
         <div className="modal-overlay">
           <div className="modal">
-            <div className="modal-title">ðŸ  Leave Game?</div>
+            <div className="modal-title">🏠 Leave Game?</div>
             <div className="modal-text">Your current game progress will be lost.</div>
             <div className="modal-buttons">
               <button className="btn btn-cancel" onClick={() => setShowHomeConfirm(false)}>Cancel</button>
@@ -1111,7 +1111,7 @@
               <h1 className="text-3xl font-bold text-white">{game.name} Rules</h1>
             </div>
             <div className="card">
-              <h3 className="text-white font-semibold mb-2">ðŸ“– Overview</h3>
+              <h3 className="text-white font-semibold mb-2">📖 Overview</h3>
               <p className="text-lighter">{game.rules.overview}</p>
             </div>
             <div className="card">
@@ -1148,7 +1148,7 @@
               })}
             </div>
             <div className="card">
-              <h3 className="text-white font-semibold mb-2">ðŸ† Winning</h3>
+              <h3 className="text-white font-semibold mb-2">🏆 Winning</h3>
               <p className="text-lighter">{game.rules.winning}</p>
             </div>
             <button onClick={() => setShowRules(false)} className={`btn accent-${game.color} text-white w-full mt-4`}>Got It!</button>
@@ -1241,7 +1241,7 @@
             <h3 className="text-white font-semibold mb-3">🎯 Lower Section</h3>
             <div className="score-item"><span className="text-white">🎲 3 of a Kind</span><span className="text-light">Sum all dice</span></div>
             <div className="score-item"><span className="text-white">🎲 4 of a Kind</span><span className="text-light">Sum all dice</span></div>
-            <div className="score-item"><span className="text-white">ðŸ  Full House</span><span className="text-amber font-bold">25 pts</span></div>
+            <div className="score-item"><span className="text-white">🏠 Full House</span><span className="text-amber font-bold">25 pts</span></div>
             <div className="score-item"><span className="text-white">📈 Sm Straight</span><span className="text-amber font-bold">30 pts</span></div>
             <div className="score-item"><span className="text-white">📈 Lg Straight</span><span className="text-amber font-bold">40 pts</span></div>
             <div className="score-item"><span className="text-white">🌟 YAHTZEE</span><span className="text-amber font-bold">50 pts</span></div>
@@ -1666,7 +1666,7 @@
                   );
                 })}
                 <div style={{display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginTop: '8px', padding: '8px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px'}}>
-                  <span style={{fontSize: '16px'}}>ðŸ</span>
+                  <span style={{fontSize: '16px'}}>�</span>
                   <span style={{color: 'rgba(255,255,255,0.7)', fontSize: '12px', fontWeight: '600'}}>121 to win!</span>
                 </div>
               </div>
@@ -2345,7 +2345,7 @@
                     <span className="game-icon">{g.icon}</span>
                     <div><h2 className="text-xl font-bold text-white">{g.name}</h2><p className="text-lighter text-sm">{g.description}</p></div>
                   </button>
-                  <button onClick={() => { setSelectedGame(key); setShowRules(true); }} className="rules-btn">ðŸ“–</button>
+                  <button onClick={() => { setSelectedGame(key); setShowRules(true); }} className="rules-btn">📖</button>
                 </div>
               ))}
             </div>
@@ -2366,7 +2366,7 @@
           <div className="container">
             <div className="flex justify-between items-center mb-4">
               <button onClick={confirmGoHome} className="text-white" style={{background: 'rgba(255,255,255,0.2)', padding: '8px 16px', borderRadius: '8px', border: 'none', cursor: 'pointer'}}>← Back</button>
-              <button onClick={() => setShowRules(true)} className="rules-btn">ðŸ“– Rules</button>
+              <button onClick={() => setShowRules(true)} className="rules-btn">📖 Rules</button>
             </div>
             <div className="text-center mb-6">
               <span className="text-5xl mb-2">{game.icon}</span>
@@ -2493,7 +2493,7 @@
             <div className="flex items-center justify-between mb-4 pt-4">
               <div className="flex items-center gap-2"><span className="text-2xl">{game.icon}</span><h1 className="text-2xl font-bold text-white">{game.name}</h1></div>
               <div className="flex items-center gap-2">
-                <button onClick={() => setShowRules(true)} className="rules-btn">ðŸ“–</button>
+                <button onClick={() => setShowRules(true)} className="rules-btn">📖</button>
                 <span className="badge">Rd {currentRound}</span>
               </div>
             </div>
