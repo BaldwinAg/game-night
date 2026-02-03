@@ -886,15 +886,29 @@
 
       const removePlayer = (id) => setPlayers(players.filter(p => p.id !== id));
 
+      const movePlayer = (index, direction) => {
+        const newPlayers = [...players];
+        const newIndex = index + direction;
+        if (newIndex >= 0 && newIndex < players.length) {
+          [newPlayers[index], newPlayers[newIndex]] = [newPlayers[newIndex], newPlayers[index]];
+          setPlayers(newPlayers);
+        }
+      };
+
       const startGame = async () => {
         if (players.length >= (game?.minPlayers || 2)) {
           // For Pitch, check for saved house rules
           if (selectedGame === 'pitch') {
+            console.log('[startGame] Loading house rules for Pitch...');
             const savedRules = await loadPitchHouseRules(currentUser);
+            console.log('[startGame] Loaded rules:', savedRules);
             if (savedRules) {
+              console.log('[startGame] Found saved rules, showing popup');
               setSavedHouseRules(savedRules);
               setShowHouseRulesPopup(true);
               return; // Don't start game yet - wait for user to choose
+            } else {
+              console.log('[startGame] No saved rules found, starting normally');
             }
           }
           setScreen('game'); setCurrentRound(1); setCurrentPlayerIndex(0); setActiveTab('scorecard');
@@ -1040,6 +1054,15 @@
       const RoundScoreModal = () => {
         if (!editingRoundScore) return null;
         const player = players.find(p => p.id === editingRoundScore.playerId);
+        const inputRef = React.useRef(null);
+
+        React.useEffect(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+          }
+        }, []);
+
         const saveRoundScore = () => {
           const val = editingRoundScore.value;
           if (val === '' || val === '-' || /^-?\d*$/.test(val)) {
@@ -1048,12 +1071,12 @@
           setEditingRoundScore(null);
         };
         return (
-          <div className="modal-overlay">
-            <div className="modal">
+          <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && setEditingRoundScore(null)}>
+            <div className="modal" onClick={(e) => e.stopPropagation()}>
               <div className="modal-title">Enter Score</div>
               <div className="modal-text">{player?.name}</div>
-              <input type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '28px', padding: '16px'}}
-                value={editingRoundScore.value} onChange={(e) => setEditingRoundScore({...editingRoundScore, value: e.target.value})} autoFocus 
+              <input ref={inputRef} type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '28px', padding: '16px'}}
+                value={editingRoundScore.value} onChange={(e) => setEditingRoundScore({...editingRoundScore, value: e.target.value})}
                 onKeyDown={(e) => e.key === 'Enter' && saveRoundScore()} />
               <div className="modal-buttons">
                 <button className="btn btn-cancel" onClick={() => setEditingRoundScore(null)}>Cancel</button>
@@ -2845,7 +2868,23 @@
                         </span>
                       )}
                     </span>
-                    <button onClick={() => removePlayer(player.id)} className="remove-btn">X</button>
+                    <div style={{display: 'flex', gap: '4px', alignItems: 'center'}}>
+                      {i > 0 && (
+                        <button onClick={() => movePlayer(i, -1)}
+                          style={{padding: '4px 8px', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px',
+                            color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '600'}}>
+                          ↑
+                        </button>
+                      )}
+                      {i < players.length - 1 && (
+                        <button onClick={() => movePlayer(i, 1)}
+                          style={{padding: '4px 8px', background: 'rgba(255,255,255,0.15)', border: 'none', borderRadius: '6px',
+                            color: 'white', cursor: 'pointer', fontSize: '12px', fontWeight: '600'}}>
+                          ↓
+                        </button>
+                      )}
+                      <button onClick={() => removePlayer(player.id)} className="remove-btn">X</button>
+                    </div>
                   </div>
                 ))
               )}
