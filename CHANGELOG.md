@@ -2,6 +2,52 @@
 
 All notable changes to Game Night Scorekeeper will be documented in this file.
 
+## [5.3.0] - 2026-02-03
+
+### Added - UX Improvements & Pitch Enhancements
+- **Drag-and-Drop Player Reordering**: Players can now be reordered by dragging (⋮⋮ handle)
+- **Bigger Arrow Buttons**: Up/down arrows increased to 44x44px for mobile touch targets
+- **House Rules Save/Load**: Pitch game rules now save to localStorage/Firestore
+  - Save custom point systems, target scores, shoot the moon rules
+  - On next Pitch game start, popup asks to use saved rules or set new
+- **Pitch Team Selection Workflow**: Select teams when adding players (before game setup)
+  - Team 1/Team 2 buttons visible when Pitch is selected
+  - Team badges show on player list
+- **Dealer Indicator**: Shows 🃏 playing card icon next to current dealer
+  - Dealer auto-advances after each hand
+  - Visible in both teams mode and individual mode
+- **Two-Phase Cribbage Scoring**: Restored separate pegging and showing phases
+  - Large, obvious "✅ Confirm Pegging" and "✅ Confirm Hand" buttons
+  - Round history shows peg/show breakdown
+  - Edit past rounds with recalculation
+
+### Fixed
+- **All Corrupted Emojis**: Fixed 142 corrupted UTF-8 byte sequences throughout app
+  - Bullets, dashes, quotes, arrows now display correctly
+  - Remove buttons show "X" instead of garbled text
+  - Navigation fully readable on all devices
+- **Score Input Focus**: Input now properly focuses and selects all text on open
+  - Can type multi-digit numbers without clicking multiple times
+  - Fixed using useRef and useEffect
+- **JSX Syntax Error**: Fixed missing closing div tag in player list
+- **House Rules Button**: Now always visible (not just when signed in)
+  - Saves to Firestore if signed in, localStorage otherwise
+
+### Changed
+- Updated app version to 5.3.0
+- Service worker cache updated to v19
+- Mobile touch targets follow Apple's 44px guideline
+- Player list UI shows drag handles for visual clarity
+
+### Technical
+- Added drag-and-drop state management (draggedPlayerIndex)
+- Implemented handleDragStart, handleDragOver, handleDragEnd handlers
+- House rules functions: savePitchHouseRules(), loadPitchHouseRules()
+- Dual-storage strategy for house rules (Firestore + localStorage fallback)
+- Python byte-level string replacement for emoji corruption fixes
+
+---
+
 ## [5.2.0] - 2025-01-26
 
 ### Added - Player Groups (Phase 3 Complete)

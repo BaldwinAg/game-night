@@ -1,25 +1,26 @@
 # 🎲 Game Night Scorekeeper
 
-**Version 5.2.0** | Player Groups
+**Version 5.3.0** | UX Improvements & Pitch Enhancements
 
 A mobile-friendly Progressive Web App (PWA) for tracking scores across multiple card and dice games. Perfect for family game nights!
 
 **Presented by Baldwin Ag**
 
-## 🆕 What's New in v5.2.0
+## 🆕 What's New in v5.3.0
 
-- **👥 Player Groups**: Create and join game night groups with friends and family
-- **🎟️ Invite Codes**: Share 6-character codes to invite members to your groups
-- **🔄 Group Switching**: Select your active group from a dropdown on the home screen
-- **👑 Group Management**: Full member management with owner controls
-- **⚡ Real-Time Sync**: Group changes sync instantly across all devices
-- **📱 Multi-Group Support**: Be a member of multiple groups simultaneously
+- **🔀 Drag-and-Drop Players**: Reorder players by dragging (like they sit around the table)
+- **📏 Bigger Touch Targets**: 44px buttons for easy mobile tapping
+- **🏠 House Rules Save**: Pitch game rules remember your preferences
+- **👥 Team Selection**: Choose teams when adding players (before game setup)
+- **🃏 Dealer Indicator**: Shows who's dealing with a card icon
+- **🎴 Two-Phase Cribbage**: Separate pegging and showing with obvious confirm buttons
+- **✨ Fixed All Emojis**: No more corrupted characters - clean UI everywhere
 
 ### Coming Soon
-- **v5.3.0**: Cloud match recording with points system
-- **v5.4.0**: Synced leaderboards (wins + points)
-- **v5.5.0**: Match history view
-- **v5.6.0**: Offline support with sync
+- **v5.4.0**: Cloud match recording with points system
+- **v5.5.0**: Synced leaderboards (wins + points)
+- **v5.6.0**: Match history view
+- **v5.7.0**: Offline support with sync
 
 See [ROADMAP.md](ROADMAP.md) for the full development plan.
 
@@ -195,6 +196,7 @@ This app is not affiliated with or endorsed by any game manufacturers.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 5.3.0 | Feb 2026 | Drag-and-drop reordering, House Rules, Pitch enhancements |
 | 5.2.0 | Jan 2025 | Player groups with invite codes |
 | 5.1.0 | Jan 2025 | Google Sign-In authentication |
 | 5.0.0 | Jan 2025 | Firebase foundation, version display |
