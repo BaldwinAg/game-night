@@ -863,19 +863,27 @@
           return;
         }
 
-        // Handle redirect result (user returning from Google sign-in)
-        firebaseAuth.getRedirectResult().then((result) => {
-          if (result && result.user) {
-            console.log('[Auth] Sign-in via redirect successful:', result.user.displayName);
+        // Handle redirect result FIRST (user returning from Google sign-in)
+        const handleRedirectResult = async () => {
+          try {
+            const result = await firebaseAuth.getRedirectResult();
+            if (result && result.user) {
+              console.log('[Auth] Sign-in via redirect successful:', result.user.displayName);
+              // User will be picked up by onAuthStateChanged below
+            } else {
+              console.log('[Auth] No redirect result (normal page load)');
+            }
+          } catch (error) {
+            console.error('[Auth] Redirect sign-in error:', error);
+            if (error.code === 'auth/unauthorized-domain') {
+              alert('Firebase Error: baldwinag.com is not an authorized domain. Please add it in Firebase Console → Authentication → Settings → Authorized domains');
+            } else if (error.code && error.message) {
+              alert('Sign-in failed: ' + error.message + ' (Code: ' + error.code + ')');
+            }
           }
-        }).catch((error) => {
-          console.error('[Auth] Redirect sign-in error:', error);
-          if (error.code === 'auth/unauthorized-domain') {
-            alert('Firebase Error: baldwinag.com is not an authorized domain. Please add it in Firebase Console → Authentication → Settings → Authorized domains');
-          } else if (error.code && error.code !== 'auth/popup-closed-by-user') {
-            alert('Sign-in failed: ' + error.message);
-          }
-        });
+        };
+
+        handleRedirectResult();
 
         const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
           setCurrentUser(user);
