@@ -207,9 +207,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 5.5.0 - Cloud Sync for Groups
+    // Version 5.5.1 - Mobile Sign-In Fix
     // ============================================
-    const APP_VERSION = '5.5.0';
+    const APP_VERSION = '5.5.1';
     
     // Firebase initialization (if configured)
     let firebaseApp = null;
@@ -863,6 +863,18 @@
           return;
         }
 
+        // Handle redirect result (user returning from Google sign-in)
+        firebaseAuth.getRedirectResult().then((result) => {
+          if (result.user) {
+            console.log('[Auth] Sign-in via redirect successful:', result.user.displayName);
+          }
+        }).catch((error) => {
+          console.error('[Auth] Redirect sign-in error:', error);
+          if (error.code !== 'auth/popup-closed-by-user') {
+            alert('Sign-in failed: ' + error.message);
+          }
+        });
+
         const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
           setCurrentUser(user);
           setAuthLoading(false);
@@ -1162,13 +1174,12 @@
 
         try {
           const provider = new firebase.auth.GoogleAuthProvider();
-          await firebaseAuth.signInWithPopup(provider);
-          console.log('[Auth] Sign-in successful');
+          // Use redirect for mobile compatibility (no popups)
+          await firebaseAuth.signInWithRedirect(provider);
+          console.log('[Auth] Redirecting to Google sign-in...');
         } catch (error) {
           console.error('[Auth] Sign-in error:', error);
-          if (error.code !== 'auth/popup-closed-by-user') {
-            alert('Sign-in failed: ' + error.message);
-          }
+          alert('Sign-in failed: ' + error.message);
         }
       };
 
