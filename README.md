@@ -1,26 +1,24 @@
 # 🎲 Game Night Scorekeeper
 
-**Version 5.3.0** | UX Improvements & Pitch Enhancements
+**Version 5.5.0** | Cloud Sync for Groups
 
 A mobile-friendly Progressive Web App (PWA) for tracking scores across multiple card and dice games. Perfect for family game nights!
 
 **Presented by Baldwin Ag**
 
-## 🆕 What's New in v5.3.0
+## 🆕 What's New in v5.5.0
 
-- **🔀 Drag-and-Drop Players**: Reorder players by dragging (like they sit around the table)
-- **📏 Bigger Touch Targets**: 44px buttons for easy mobile tapping
-- **🏠 House Rules Save**: Pitch game rules remember your preferences
-- **👥 Team Selection**: Choose teams when adding players (before game setup)
-- **🃏 Dealer Indicator**: Shows who's dealing with a card icon
-- **🎴 Two-Phase Cribbage**: Separate pegging and showing with obvious confirm buttons
-- **✨ Fixed All Emojis**: No more corrupted characters - clean UI everywhere
+- **☁️ Cloud Sync**: Real shared leaderboards for groups - all members see same wins!
+- **🏆 Shared Scoreboards**: Create "Pitch Buddies" and "Family" with separate leaderboards
+- **📱 Real-Time Sync**: Wins sync instantly across all devices
+- **🎮 Auto Match Recording**: Games automatically save to cloud when group selected
+- **👥 Player Groups**: Create groups, share invite codes, manage members
+- **🔀 Plus all v5.3.0 & v5.4.0 features**: Drag-and-drop, house rules, team selection
 
 ### Coming Soon
-- **v5.4.0**: Cloud match recording with points system
-- **v5.5.0**: Synced leaderboards (wins + points)
-- **v5.6.0**: Match history view
-- **v5.7.0**: Offline support with sync
+- **v5.6.0**: Match history view with dates and scores
+- **v5.7.0**: Points system (not just wins)
+- **v5.8.0**: Enhanced offline support with sync queue
 
 See [ROADMAP.md](ROADMAP.md) for the full development plan.
 
@@ -196,8 +194,10 @@ This app is not affiliated with or endorsed by any game manufacturers.
 
 | Version | Date | Description |
 |---------|------|-------------|
+| 5.5.0 | Feb 2026 | Cloud sync for groups - real shared leaderboards |
+| 5.4.0 | Feb 2026 | Player groups infrastructure (create, join, manage) |
 | 5.3.0 | Feb 2026 | Drag-and-drop reordering, House Rules, Pitch enhancements |
-| 5.2.0 | Jan 2025 | Player groups with invite codes |
+| 5.2.0 | Jan 2025 | (Placeholder - not actually implemented) |
 | 5.1.0 | Jan 2025 | Google Sign-In authentication |
 | 5.0.0 | Jan 2025 | Firebase foundation, version display |
 | 4.11 | Jan 2025 | Modal-based score entry fix |

@@ -2,6 +2,78 @@
 
 All notable changes to Game Night Scorekeeper will be documented in this file.
 
+## [5.5.0] - 2026-02-03
+
+### Added - Cloud Sync for Groups
+- **Real Shared Leaderboards**: Groups now have true shared leaderboards synced across all devices
+- **Auto-Match Recording**: Wins automatically save to Firestore when a group is selected
+- **Cloud Sync Status**: Visual indicators show when cloud sync is active
+  - "☁️ Cloud Sync Active" on home screen when group selected
+  - "Match saved to cloud for [Group Name]" on winner screen
+  - "Select a group to sync" reminder when signed in but no group active
+- **Real-Time Sync**: All group members see the same wins data instantly
+- **Match History Storage**: Complete game results stored in Firestore
+  - Game type, winner, all player scores, timestamp
+  - Structured for future match history view
+
+### Technical
+- Firestore collection structure: `/groups/{groupId}/matches/{matchId}`
+- Match data includes: game, gameName, winner, players array, scores, date, userId, userName
+- `loadGroupWins()` function aggregates wins from Firestore matches
+- Auto-load group wins when selected group changes (useEffect hook)
+- Merge cloud wins with localStorage for offline support
+- `recordWin()` now saves to both localStorage and Firestore
+
+### Changed
+- Updated app version to 5.5.0
+- Service worker cache updated to v21
+- Winner screen shows cloud sync confirmation
+- Leaderboard now uses cloud-synced data when group selected
+
+### How It Works
+1. Sign in with Google ✅
+2. Create or join a group ✅
+3. Select group from dropdown ✅
+4. Play games - wins auto-save to cloud ☁️
+5. All group members see the same shared leaderboard 🏆
+
+---
+
+## [5.4.0] - 2026-02-03
+
+### Added - Player Groups Infrastructure
+- **Create Groups**: Create game night groups with auto-generated 6-character invite codes
+- **Join Groups**: Join groups using invite codes shared by group owners
+- **Group Management UI**: Full management interface with create/join/manage flows
+  - View all group members with avatars and display names
+  - Owner controls: remove members (owner badge 👑)
+  - Leave groups anytime with automatic ownership transfer
+  - Copy invite codes to clipboard with one tap
+- **Group Selector**: Dropdown on home screen to switch between groups
+  - "All Players" option shows everyone (localStorage mode)
+  - Select specific group to filter leaderboard
+  - Settings ⚙️ icon for quick access to management
+- **Multi-Group Support**: Users can be members of multiple groups simultaneously
+- **Auto-Cleanup**: Empty groups automatically deleted when last member leaves
+
+### Technical
+- Firestore `groups` collection with member arrays
+- Client-side filtering for group membership queries
+- localStorage persistence for selected group across sessions
+- Group creation with `generateInviteCode()` (6-char alphanumeric, no ambiguous chars)
+- Member management functions: createGroup, joinGroup, leaveGroup, removeMemberFromGroup
+- Ownership transfer when owner leaves group
+- Real-time group loading on sign-in
+
+### UI Components
+- Group selector dropdown with settings icon
+- Group management modal (3 modes: menu, create, join)
+- Member list with avatars and remove buttons
+- Invite code display with copy functionality
+- Visual group indicators throughout app
+
+---
+
 ## [5.3.0] - 2026-02-03
 
 ### Added - UX Improvements & Pitch Enhancements
