@@ -898,6 +898,26 @@
           console.log('[Auth] Checking for redirect result...');
           addDebugMessage('Checking redirect result...');
 
+          // Check URL for auth parameters
+          const urlParams = new URLSearchParams(window.location.search);
+          const hasAuthParams = urlParams.has('code') || urlParams.has('state') || urlParams.has('error');
+          console.log('[Auth] URL has auth params:', hasAuthParams);
+          if (hasAuthParams) {
+            console.log('[Auth] URL params:', Array.from(urlParams.entries()));
+            addDebugMessage('URL has auth params: ' + hasAuthParams);
+          }
+
+          // Check localStorage for Firebase auth data
+          const authKeys = [];
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.includes('firebase')) {
+              authKeys.push(key);
+            }
+          }
+          console.log('[Auth] Firebase localStorage keys:', authKeys.length);
+          addDebugMessage('localStorage keys: ' + authKeys.length);
+
           // Check for private browsing
           const isPrivate = await checkPrivateBrowsing();
           if (isPrivate) {
