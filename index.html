@@ -3525,6 +3525,62 @@
               {currentUser && !selectedGroupId && (
                 <p className="text-xs mt-2" style={{color: 'rgba(255,255,255,0.5)'}}>☁️ Sign in complete • Select a group to sync</p>
               )}
+
+              {/* Storage Check Button */}
+              <button
+                onClick={() => {
+                  // Test localStorage
+                  let storageWorks = false;
+                  let firebaseKeys = 0;
+                  let testWriteWorks = false;
+
+                  try {
+                    // Count Firebase keys
+                    for (let i = 0; i < localStorage.length; i++) {
+                      const key = localStorage.key(i);
+                      if (key && key.includes('firebase')) {
+                        firebaseKeys++;
+                      }
+                    }
+
+                    // Test write
+                    localStorage.setItem('storageTest', 'test');
+                    const readBack = localStorage.getItem('storageTest');
+                    testWriteWorks = (readBack === 'test');
+                    localStorage.removeItem('storageTest');
+
+                    storageWorks = true;
+                  } catch (e) {
+                    storageWorks = false;
+                  }
+
+                  // Clear old messages and show results
+                  setDebugMessages([]);
+                  addDebugMessage('=== STORAGE TEST ===');
+                  addDebugMessage('localStorage: ' + (storageWorks ? '✅ WORKS' : '❌ BLOCKED'));
+                  addDebugMessage('Write test: ' + (testWriteWorks ? '✅ WORKS' : '❌ BLOCKED'));
+                  addDebugMessage('Firebase keys: ' + firebaseKeys);
+                  addDebugMessage('Total keys: ' + localStorage.length);
+
+                  if (!storageWorks || firebaseKeys === 0) {
+                    addDebugMessage('⚠️ Storage blocked - auth won\'t work');
+                  } else {
+                    addDebugMessage('✅ Storage OK - auth should work');
+                  }
+                }}
+                style={{
+                  marginTop: '12px',
+                  padding: '8px 16px',
+                  background: 'rgba(59, 130, 246, 0.8)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: 'white',
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}>
+                🔍 Check Storage Status
+              </button>
             </div>
 
             {/* Debug Panel (temporary - for mobile troubleshooting) */}
