@@ -222,6 +222,16 @@
         firebaseApp = firebase.initializeApp(window.FIREBASE_CONFIG);
         firebaseAuth = firebase.auth();
         firebaseDb = firebase.firestore();
+
+        // Set persistence to LOCAL (works better on mobile Safari)
+        firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+          .then(() => {
+            console.log('[Firebase] Persistence set to LOCAL');
+          })
+          .catch((error) => {
+            console.log('[Firebase] Persistence error:', error.message);
+          });
+
         firebaseConfigured = true;
         console.log(`[Game Night v${APP_VERSION}] Firebase initialized`);
       } else {
@@ -869,34 +879,65 @@
           return;
         }
 
+        // Check for private browsing mode (blocks Firebase auth)
+        const checkPrivateBrowsing = async () => {
+          try {
+            await new Promise((resolve, reject) => {
+              const test = window.indexedDB.open('test');
+              test.onerror = () => reject('IndexedDB blocked');
+              test.onsuccess = () => resolve('OK');
+            });
+            return false;
+          } catch (e) {
+            return true; // Likely in private browsing
+          }
+        };
+
         // Handle redirect result FIRST (user returning from Google sign-in)
         const handleRedirectResult = async () => {
           console.log('[Auth] Checking for redirect result...');
           addDebugMessage('Checking redirect result...');
+
+          // Check for private browsing
+          const isPrivate = await checkPrivateBrowsing();
+          if (isPrivate) {
+            console.warn('[Auth] ⚠️ Private browsing detected - auth may not work');
+            addDebugMessage('⚠️ Private browsing detected');
+          }
+
           try {
             const result = await firebaseAuth.getRedirectResult();
             console.log('[Auth] getRedirectResult returned:', result);
+            console.log('[Auth] Result object keys:', result ? Object.keys(result) : 'null');
+            console.log('[Auth] Result.user:', result?.user);
+            console.log('[Auth] Result.credential:', result?.credential);
+            console.log('[Auth] Result.operationType:', result?.operationType);
 
             if (result && result.user) {
               console.log('[Auth] ✅ Sign-in via redirect successful!');
               console.log('[Auth] User:', result.user.displayName, result.user.email);
-              addDebugMessage('✅ Redirect successful: ' + result.user.displayName);
+              addDebugMessage('✅ Redirect OK: ' + result.user.displayName);
               // User will be picked up by onAuthStateChanged below
             } else if (result && result.credential) {
               console.log('[Auth] Got credential but no user?', result);
-              addDebugMessage('Got credential, no user?');
+              addDebugMessage('❌ Credential but no user');
+            } else if (result && result.operationType) {
+              console.log('[Auth] Got operationType:', result.operationType);
+              addDebugMessage('Operation: ' + result.operationType);
             } else {
               console.log('[Auth] No redirect result (normal page load or redirect pending)');
-              addDebugMessage('No redirect result (normal load)');
+              addDebugMessage('No redirect (normal load)');
             }
           } catch (error) {
             console.error('[Auth] ❌ Redirect sign-in error:', error);
             console.error('[Auth] Error code:', error.code);
             console.error('[Auth] Error message:', error.message);
-            addDebugMessage('❌ Redirect error: ' + error.code);
+            addDebugMessage('❌ Error: ' + (error.code || error.message));
 
             if (error.code === 'auth/unauthorized-domain') {
               alert('Firebase Error: baldwinag.com is not an authorized domain. Please add it in Firebase Console → Authentication → Settings → Authorized domains');
+            } else if (error.code === 'auth/web-storage-unsupported') {
+              alert('Private browsing mode detected. Please use regular Safari to sign in.');
             } else if (error.code && error.message) {
               alert('Sign-in failed: ' + error.message + ' (Code: ' + error.code + ')');
             }
@@ -3393,6 +3434,15 @@
                 {debugMessages.map((msg, idx) => (
                   <div key={idx} style={{color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontFamily: 'monospace', marginBottom: '4px'}}>{msg}</div>
                 ))}
+                <button onClick={() => {
+                  addDebugMessage('Current user: ' + (firebaseAuth?.currentUser?.displayName || 'null'));
+                  addDebugMessage('Auth state: ' + (firebaseAuth?.currentUser ? 'signed in' : 'not signed in'));
+                }} style={{marginTop: '8px', padding: '6px 12px', background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '11px', cursor: 'pointer'}}>
+                  Check Auth Status
+                </button>
+                <button onClick={() => setDebugMessages([])} style={{marginTop: '8px', marginLeft: '8px', padding: '6px 12px', background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: '8px', color: 'white', fontSize: '11px', cursor: 'pointer'}}>
+                  Clear Log
+                </button>
               </div>
             )}
 
