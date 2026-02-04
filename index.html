@@ -865,16 +865,25 @@
 
         // Handle redirect result FIRST (user returning from Google sign-in)
         const handleRedirectResult = async () => {
+          console.log('[Auth] Checking for redirect result...');
           try {
             const result = await firebaseAuth.getRedirectResult();
+            console.log('[Auth] getRedirectResult returned:', result);
+
             if (result && result.user) {
-              console.log('[Auth] Sign-in via redirect successful:', result.user.displayName);
+              console.log('[Auth] ✅ Sign-in via redirect successful!');
+              console.log('[Auth] User:', result.user.displayName, result.user.email);
               // User will be picked up by onAuthStateChanged below
+            } else if (result && result.credential) {
+              console.log('[Auth] Got credential but no user?', result);
             } else {
-              console.log('[Auth] No redirect result (normal page load)');
+              console.log('[Auth] No redirect result (normal page load or redirect pending)');
             }
           } catch (error) {
-            console.error('[Auth] Redirect sign-in error:', error);
+            console.error('[Auth] ❌ Redirect sign-in error:', error);
+            console.error('[Auth] Error code:', error.code);
+            console.error('[Auth] Error message:', error.message);
+
             if (error.code === 'auth/unauthorized-domain') {
               alert('Firebase Error: baldwinag.com is not an authorized domain. Please add it in Firebase Console → Authentication → Settings → Authorized domains');
             } else if (error.code && error.message) {
@@ -886,6 +895,9 @@
         handleRedirectResult();
 
         const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
+          console.log('[Auth] onAuthStateChanged triggered');
+          console.log('[Auth] User state:', user ? `Signed in as ${user.displayName}` : 'Not signed in');
+
           setCurrentUser(user);
           setAuthLoading(false);
 
@@ -1177,18 +1189,25 @@
 
       // Authentication functions
       const handleSignIn = async () => {
+        console.log('[Auth] Sign-in button clicked');
+
         if (!firebaseAuth) {
           alert('Firebase is not configured. Running in local-only mode.');
           return;
         }
 
         try {
+          console.log('[Auth] Creating Google Auth provider...');
           const provider = new firebase.auth.GoogleAuthProvider();
+          console.log('[Auth] Calling signInWithRedirect...');
+
           // Use redirect for mobile compatibility (no popups)
           await firebaseAuth.signInWithRedirect(provider);
-          console.log('[Auth] Redirecting to Google sign-in...');
+          console.log('[Auth] ✅ Redirect initiated (should navigate to Google now)');
         } catch (error) {
-          console.error('[Auth] Sign-in error:', error);
+          console.error('[Auth] ❌ Sign-in error:', error);
+          console.error('[Auth] Error code:', error.code);
+          console.error('[Auth] Error message:', error.message);
           alert('Sign-in failed: ' + error.message);
         }
       };
