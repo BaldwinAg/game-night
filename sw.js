@@ -1,11 +1,11 @@
 /**
  * Service Worker for Game Night Scorekeeper
- * Version: 5.3.0
- * Cache Version: v19
+ * Version: 5.4.0
+ * Cache Version: v20
  */
 
-const CACHE_NAME = 'game-night-v19';
-const APP_VERSION = '5.3.0';
+const CACHE_NAME = 'game-night-v20';
+const APP_VERSION = '5.4.0';
 
 const requiredUrls = [
   './',
