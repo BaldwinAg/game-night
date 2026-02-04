@@ -207,9 +207,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 5.4.0 - Player Groups
+    // Version 5.5.0 - Cloud Sync for Groups
     // ============================================
-    const APP_VERSION = '5.4.0';
+    const APP_VERSION = '5.5.0';
     
     // Firebase initialization (if configured)
     let firebaseApp = null;
@@ -507,6 +507,33 @@
       } catch (e) {
         console.error('[Groups] Error loading groups:', e);
         return [];
+      }
+    };
+
+    // Load wins from Firestore for a group
+    const loadGroupWins = async (groupId) => {
+      if (!groupId || !firebaseDb) return {};
+
+      try {
+        const matchesRef = firebaseDb.collection('groups').doc(groupId).collection('matches');
+        const snapshot = await matchesRef.get();
+
+        const wins = {};
+        snapshot.forEach(doc => {
+          const match = doc.data();
+          const winner = match.winner;
+          const game = match.game;
+
+          if (!wins[winner]) wins[winner] = {};
+          if (!wins[winner][game]) wins[winner][game] = 0;
+          wins[winner][game]++;
+        });
+
+        console.log('[Sync] Loaded', snapshot.size, 'matches from group', groupId);
+        return wins;
+      } catch (e) {
+        console.error('[Sync] Error loading group wins:', e);
+        return {};
       }
     };
 
@@ -913,6 +940,31 @@
         }
       }, [selectedGroupId]);
 
+      // Load group wins when selected group changes
+      useEffect(() => {
+        const loadWinsForGroup = async () => {
+          if (selectedGroupId && currentUser) {
+            const groupWins = await loadGroupWins(selectedGroupId);
+            // Merge group wins with local wins
+            setWinsData(prevData => {
+              const merged = { ...prevData };
+              Object.entries(groupWins).forEach(([player, games]) => {
+                if (!merged[player]) merged[player] = {};
+                Object.entries(games).forEach(([game, count]) => {
+                  merged[player][game] = count; // Group wins override local
+                });
+              });
+              return merged;
+            });
+          } else {
+            // No group selected - load from localStorage
+            setWinsData(loadWins());
+          }
+        };
+
+        loadWinsForGroup();
+      }, [selectedGroupId, currentUser]);
+
       // Track if we've recorded this win
       const [winRecorded, setWinRecorded] = useState(false);
 
@@ -920,6 +972,8 @@
       useEffect(() => {
         if (screen === 'winner' && winner && selectedGame && !winRecorded) {
           setWinRecorded(true);
+
+          // Save to localStorage (always)
           setWinsData(prevData => {
             const newData = { ...prevData };
             if (!newData[winner.name]) newData[winner.name] = {};
@@ -928,8 +982,34 @@
             saveWins(newData);
             return newData;
           });
+
+          // Save to Firestore if signed in and group selected
+          if (currentUser && firebaseDb && selectedGroupId) {
+            const saveMatchToCloud = async () => {
+              try {
+                const matchData = {
+                  game: selectedGame,
+                  gameName: GAMES[selectedGame].name,
+                  winner: winner.name,
+                  players: players.map(p => ({
+                    name: p.name,
+                    score: p.total
+                  })),
+                  date: firebase.firestore.FieldValue.serverTimestamp(),
+                  userId: currentUser.uid,
+                  userName: currentUser.displayName
+                };
+
+                await firebaseDb.collection('groups').doc(selectedGroupId).collection('matches').add(matchData);
+                console.log('[Sync] Match saved to group:', selectedGroupId);
+              } catch (e) {
+                console.error('[Sync] Error saving match to cloud:', e);
+              }
+            };
+            saveMatchToCloud();
+          }
         }
-      }, [screen, winner, selectedGame, winRecorded]);
+      }, [screen, winner, selectedGame, winRecorded, currentUser, selectedGroupId, players]);
 
       // Reset winRecorded when leaving winner screen
       useEffect(() => {
@@ -939,7 +1019,8 @@
       }, [screen]);
 
       // Record a win (for manual use if needed)
-      const recordWin = (playerName, gameKey) => {
+      const recordWin = async (playerName, gameKey) => {
+        // Save to localStorage (always)
         setWinsData(prevData => {
           const newData = { ...prevData };
           if (!newData[playerName]) newData[playerName] = {};
@@ -948,6 +1029,27 @@
           saveWins(newData);
           return newData;
         });
+
+        // Save to Firestore if signed in and group selected
+        if (currentUser && firebaseDb && selectedGroupId) {
+          try {
+            const matchData = {
+              game: gameKey,
+              gameName: GAMES[gameKey].name,
+              winner: playerName,
+              players: players.map(p => p.name),
+              date: firebase.firestore.FieldValue.serverTimestamp(),
+              userId: currentUser.uid,
+              userName: currentUser.displayName
+            };
+
+            // Save to group matches
+            await firebaseDb.collection('groups').doc(selectedGroupId).collection('matches').add(matchData);
+            console.log('[Sync] Match saved to group:', selectedGroupId);
+          } catch (e) {
+            console.error('[Sync] Error saving match to cloud:', e);
+          }
+        }
       };
 
       // Get total wins for a player
@@ -3220,8 +3322,11 @@
               <p className="text-light mb-1">Score Keeper</p>
               <p className="text-xs" style={{color: '#22c55e'}}>presented by <span className="font-semibold">Baldwin Ag</span></p>
               <p className="text-xs mt-2" style={{color: 'rgba(255,255,255,0.4)'}}>v{APP_VERSION}</p>
-              {currentUser && (
-                <p className="text-xs mt-2" style={{color: '#22c55e'}}>☁️ Signed in - Ready for cloud sync</p>
+              {currentUser && selectedGroupId && (
+                <p className="text-xs mt-2" style={{color: '#22c55e'}}>☁️ Cloud Sync Active</p>
+              )}
+              {currentUser && !selectedGroupId && (
+                <p className="text-xs mt-2" style={{color: 'rgba(255,255,255,0.5)'}}>☁️ Sign in complete • Select a group to sync</p>
               )}
             </div>
 
@@ -3455,7 +3560,11 @@
             <h1 className="text-4xl font-bold text-white mb-2">{winner.name} Wins!</h1>
             <p className="text-amber text-xl mb-2">{selectedGame === 'phase10' ? `All phases with ${winner.total} penalty` : `${winner.total.toLocaleString()} points`}</p>
             <p className="text-light mb-2">{game.name}</p>
-            <p className="text-xs mb-6" style={{color: 'rgba(255,255,255,0.6)'}}>✓ Win recorded to leaderboard</p>
+            {currentUser && selectedGroupId ? (
+              <p className="text-xs mb-6" style={{color: '#22c55e'}}>✓ Match saved to cloud for {userGroups.find(g => g.id === selectedGroupId)?.name}</p>
+            ) : (
+              <p className="text-xs mb-6" style={{color: 'rgba(255,255,255,0.6)'}}>✓ Win recorded to leaderboard</p>
+            )}
             <div className="card mb-6">
               <h2 className="text-lg font-semibold text-white mb-3">Final Standings</h2>
               {sortedPlayers.map((player, i) => (
