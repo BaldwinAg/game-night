@@ -199,6 +199,7 @@
 </head>
 <body>
   <div id="root"></div>
+  <div id="recaptcha-container"></div>
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('sw.js').catch(e => {});
@@ -207,9 +208,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 5.5.1 - Mobile Sign-In Fix
+    // Version 5.6.0 - Phone Authentication
     // ============================================
-    const APP_VERSION = '5.5.1';
+    const APP_VERSION = '5.6.0';
     
     // Firebase initialization (if configured)
     let firebaseApp = null;
@@ -872,99 +873,19 @@
       const [currentUser, setCurrentUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
 
+      // Phone authentication state
+      const [phoneNumber, setPhoneNumber] = useState('');
+      const [verificationCode, setVerificationCode] = useState('');
+      const [confirmationResult, setConfirmationResult] = useState(null);
+      const [phoneAuthStep, setPhoneAuthStep] = useState('phone'); // 'phone' or 'code'
+      const [phoneAuthError, setPhoneAuthError] = useState('');
+
       // Firebase Auth Observer - Listen for auth state changes
       useEffect(() => {
         if (!firebaseAuth) {
           setAuthLoading(false);
           return;
         }
-
-        // Check for private browsing mode (blocks Firebase auth)
-        const checkPrivateBrowsing = async () => {
-          try {
-            await new Promise((resolve, reject) => {
-              const test = window.indexedDB.open('test');
-              test.onerror = () => reject('IndexedDB blocked');
-              test.onsuccess = () => resolve('OK');
-            });
-            return false;
-          } catch (e) {
-            return true; // Likely in private browsing
-          }
-        };
-
-        // Handle redirect result FIRST (user returning from Google sign-in)
-        const handleRedirectResult = async () => {
-          console.log('[Auth] Checking for redirect result...');
-          addDebugMessage('Checking redirect result...');
-
-          // Check URL for auth parameters
-          const urlParams = new URLSearchParams(window.location.search);
-          const hasAuthParams = urlParams.has('code') || urlParams.has('state') || urlParams.has('error');
-          console.log('[Auth] URL has auth params:', hasAuthParams);
-          if (hasAuthParams) {
-            console.log('[Auth] URL params:', Array.from(urlParams.entries()));
-            addDebugMessage('URL has auth params: ' + hasAuthParams);
-          }
-
-          // Check localStorage for Firebase auth data
-          const authKeys = [];
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i);
-            if (key && key.includes('firebase')) {
-              authKeys.push(key);
-            }
-          }
-          console.log('[Auth] Firebase localStorage keys:', authKeys.length);
-          addDebugMessage('localStorage keys: ' + authKeys.length);
-
-          // Check for private browsing
-          const isPrivate = await checkPrivateBrowsing();
-          if (isPrivate) {
-            console.warn('[Auth] ⚠️ Private browsing detected - auth may not work');
-            addDebugMessage('⚠️ Private browsing detected');
-          }
-
-          try {
-            const result = await firebaseAuth.getRedirectResult();
-            console.log('[Auth] getRedirectResult returned:', result);
-            console.log('[Auth] Result object keys:', result ? Object.keys(result) : 'null');
-            console.log('[Auth] Result.user:', result?.user);
-            console.log('[Auth] Result.credential:', result?.credential);
-            console.log('[Auth] Result.operationType:', result?.operationType);
-
-            if (result && result.user) {
-              console.log('[Auth] ✅ Sign-in via redirect successful!');
-              console.log('[Auth] User:', result.user.displayName, result.user.email);
-              addDebugMessage('✅ Redirect OK: ' + result.user.displayName);
-              // User will be picked up by onAuthStateChanged below
-            } else if (result && result.credential) {
-              console.log('[Auth] Got credential but no user?', result);
-              addDebugMessage('❌ Credential but no user');
-            } else if (result && result.operationType) {
-              console.log('[Auth] Got operationType:', result.operationType);
-              addDebugMessage('Operation: ' + result.operationType);
-            } else {
-              console.log('[Auth] No redirect result (normal page load or redirect pending)');
-              addDebugMessage('No redirect (normal load)');
-            }
-          } catch (error) {
-            console.error('[Auth] ❌ Redirect sign-in error:', error);
-            console.error('[Auth] Error code:', error.code);
-            console.error('[Auth] Error message:', error.message);
-            addDebugMessage('❌ Error: ' + (error.code || error.message));
-
-            if (error.code === 'auth/unauthorized-domain') {
-              alert('Firebase Error: baldwinag.com is not an authorized domain. Please add it in Firebase Console → Authentication → Settings → Authorized domains');
-            } else if (error.code === 'auth/web-storage-unsupported') {
-              alert('Private browsing mode detected. Please use regular Safari to sign in.');
-            } else if (error.code && error.message) {
-              alert('Sign-in failed: ' + error.message + ' (Code: ' + error.code + ')');
-            }
-          }
-        };
-
-        handleRedirectResult();
 
         const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
           console.log('[Auth] onAuthStateChanged triggered');
@@ -983,19 +904,20 @@
               if (!userDoc.exists) {
                 // First time login - create profile
                 await userRef.set({
-                  displayName: user.displayName || 'Anonymous',
-                  email: user.email,
-                  photoURL: user.photoURL,
+                  displayName: user.displayName || user.phoneNumber || 'Anonymous',
+                  email: user.email || null,
+                  phoneNumber: user.phoneNumber || null,
+                  photoURL: user.photoURL || null,
                   createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                   lastLogin: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                console.log('[Auth] Created new user profile for:', user.displayName);
+                console.log('[Auth] Created new user profile for:', user.displayName || user.phoneNumber);
               } else {
                 // Update last login
                 await userRef.update({
                   lastLogin: firebase.firestore.FieldValue.serverTimestamp()
                 });
-                console.log('[Auth] Updated last login for:', user.displayName);
+                console.log('[Auth] Updated last login for:', user.displayName || user.phoneNumber);
               }
 
               // Load user's groups
@@ -1261,45 +1183,102 @@
       };
 
       // Authentication functions
-      const handleSignIn = async () => {
-        console.log('[Auth] Sign-in button clicked');
-        addDebugMessage('Sign-in button clicked');
-
+      // Phone Authentication - Step 1: Send verification code
+      const sendVerificationCode = async () => {
         if (!firebaseAuth) {
           alert('Firebase is not configured. Running in local-only mode.');
           return;
         }
 
-        try {
-          console.log('[Auth] Creating Google Auth provider...');
-          const provider = new firebase.auth.GoogleAuthProvider();
-
-          // Set custom parameters for better mobile compatibility
-          provider.setCustomParameters({
-            prompt: 'select_account',
-            // Explicitly set client ID to ensure proper OAuth flow
-            client_id: '527974081115-nqglcr92q8tm9p840s0a4n91jifbl95f.apps.googleusercontent.com'
-          });
-
-          // Add profile and email scopes
-          provider.addScope('profile');
-          provider.addScope('email');
-
-          console.log('[Auth] Provider configured with custom parameters');
-          console.log('[Auth] Calling signInWithRedirect...');
-          addDebugMessage('Starting redirect to Google...');
-
-          // Use redirect for mobile compatibility (no popups)
-          await firebaseAuth.signInWithRedirect(provider);
-          console.log('[Auth] ✅ Redirect initiated (should navigate to Google now)');
-          addDebugMessage('Redirect initiated');
-        } catch (error) {
-          console.error('[Auth] ❌ Sign-in error:', error);
-          console.error('[Auth] Error code:', error.code);
-          console.error('[Auth] Error message:', error.message);
-          addDebugMessage('ERROR: ' + error.message);
-          alert('Sign-in failed: ' + error.message);
+        if (!phoneNumber || phoneNumber.length < 10) {
+          setPhoneAuthError('Please enter a valid phone number');
+          return;
         }
+
+        try {
+          setPhoneAuthError('');
+          console.log('[Auth] Sending verification code to:', phoneNumber);
+          addDebugMessage('Sending code to ' + phoneNumber);
+
+          // Format phone number (add +1 if US number without country code)
+          let formattedPhone = phoneNumber.trim();
+          if (!formattedPhone.startsWith('+')) {
+            formattedPhone = '+1' + formattedPhone.replace(/\D/g, ''); // Remove non-digits, add +1
+          }
+
+          // Initialize reCAPTCHA verifier (invisible)
+          if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+              size: 'invisible',
+              callback: (response) => {
+                console.log('[Auth] reCAPTCHA verified');
+              }
+            });
+          }
+
+          // Send SMS
+          const confirmation = await firebaseAuth.signInWithPhoneNumber(formattedPhone, window.recaptchaVerifier);
+          setConfirmationResult(confirmation);
+          setPhoneAuthStep('code');
+          console.log('[Auth] ✅ Verification code sent');
+          addDebugMessage('✅ Code sent! Check your texts');
+
+        } catch (error) {
+          console.error('[Auth] ❌ SMS send error:', error);
+          console.error('[Auth] Error code:', error.code);
+          setPhoneAuthError('Failed to send code: ' + error.message);
+          addDebugMessage('❌ Error: ' + error.code);
+
+          // Reset reCAPTCHA on error
+          if (window.recaptchaVerifier) {
+            window.recaptchaVerifier.clear();
+            window.recaptchaVerifier = null;
+          }
+        }
+      };
+
+      // Phone Authentication - Step 2: Verify code and sign in
+      const verifyCode = async () => {
+        if (!confirmationResult) {
+          setPhoneAuthError('Please request a code first');
+          return;
+        }
+
+        if (!verificationCode || verificationCode.length !== 6) {
+          setPhoneAuthError('Please enter the 6-digit code');
+          return;
+        }
+
+        try {
+          setPhoneAuthError('');
+          console.log('[Auth] Verifying code:', verificationCode);
+          addDebugMessage('Verifying code...');
+
+          const result = await confirmationResult.confirm(verificationCode);
+          console.log('[Auth] ✅ Sign-in successful!');
+          console.log('[Auth] User:', result.user.uid);
+          addDebugMessage('✅ Signed in!');
+
+          // Reset form
+          setPhoneNumber('');
+          setVerificationCode('');
+          setConfirmationResult(null);
+          setPhoneAuthStep('phone');
+
+        } catch (error) {
+          console.error('[Auth] ❌ Verification error:', error);
+          console.error('[Auth] Error code:', error.code);
+          setPhoneAuthError('Invalid code. Please try again.');
+          addDebugMessage('❌ Invalid code');
+        }
+      };
+
+      // Go back to phone number entry
+      const resetPhoneAuth = () => {
+        setPhoneAuthStep('phone');
+        setVerificationCode('');
+        setPhoneAuthError('');
+        setConfirmationResult(null);
       };
 
       const handleSignOut = async () => {
@@ -3435,14 +3414,102 @@
                       {currentUser.photoURL && (
                         <img src={currentUser.photoURL} alt="Profile" style={{width: '32px', height: '32px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)'}} />
                       )}
-                      <span style={{color: 'white', fontSize: '14px', fontWeight: '500'}}>{currentUser.displayName}</span>
+                      <span style={{color: 'white', fontSize: '14px', fontWeight: '500'}}>
+                        {currentUser.displayName || currentUser.phoneNumber || 'User'}
+                      </span>
                     </div>
                     <button onClick={handleSignOut} style={{background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '6px 12px', color: 'white', fontSize: '13px', cursor: 'pointer', fontWeight: '500'}}>Sign Out</button>
                   </div>
                 ) : (
-                  <button onClick={handleSignIn} style={{background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '8px 16px', color: 'white', fontSize: '14px', cursor: 'pointer', fontWeight: '500', display: 'flex', alignItems: 'center', gap: '8px'}}>
-                    <span>🔐</span> Sign In with Google
-                  </button>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end'}}>
+                    {phoneAuthStep === 'phone' ? (
+                      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                        <input
+                          type="tel"
+                          placeholder="Phone: 555-123-4567"
+                          value={phoneNumber}
+                          onChange={(e) => setPhoneNumber(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && sendVerificationCode()}
+                          style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(255,255,255,0.3)',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            color: 'white',
+                            fontSize: '14px',
+                            width: '160px'
+                          }}
+                        />
+                        <button
+                          onClick={sendVerificationCode}
+                          style={{
+                            background: 'rgba(34, 197, 94, 0.8)',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '8px 16px',
+                            color: 'white',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            fontWeight: '500'
+                          }}>
+                          📱 Send Code
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="6-digit code"
+                          value={verificationCode}
+                          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          onKeyDown={(e) => e.key === 'Enter' && verifyCode()}
+                          style={{
+                            background: 'rgba(255,255,255,0.1)',
+                            border: '1px solid rgba(255,255,255,0.3)',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            color: 'white',
+                            fontSize: '14px',
+                            width: '120px',
+                            textAlign: 'center',
+                            letterSpacing: '4px',
+                            fontWeight: '600'
+                          }}
+                        />
+                        <button
+                          onClick={verifyCode}
+                          style={{
+                            background: 'rgba(34, 197, 94, 0.8)',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '8px 16px',
+                            color: 'white',
+                            fontSize: '14px',
+                            cursor: 'pointer',
+                            fontWeight: '500'
+                          }}>
+                          ✓ Verify
+                        </button>
+                        <button
+                          onClick={resetPhoneAuth}
+                          style={{
+                            background: 'rgba(255,255,255,0.2)',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '8px 12px',
+                            color: 'white',
+                            fontSize: '13px',
+                            cursor: 'pointer'
+                          }}>
+                          ← Back
+                        </button>
+                      </div>
+                    )}
+                    {phoneAuthError && (
+                      <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '500'}}>{phoneAuthError}</div>
+                    )}
+                  </div>
                 )}
               </div>
             )}
