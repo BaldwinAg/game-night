@@ -844,6 +844,12 @@
       const [savedHouseRules, setSavedHouseRules] = useState(null);
       const [draggedPlayerIndex, setDraggedPlayerIndex] = useState(null);
 
+      // Debug state (temporary - for troubleshooting sign-in)
+      const [debugMessages, setDebugMessages] = useState([]);
+      const addDebugMessage = (msg) => {
+        setDebugMessages(prev => [...prev.slice(-4), `${new Date().toLocaleTimeString()}: ${msg}`]);
+      };
+
       // Player Groups state
       const [userGroups, setUserGroups] = useState([]); // Groups user is member of
       const [selectedGroupId, setSelectedGroupId] = useState(null); // Active group (null = "All Players")
@@ -866,6 +872,7 @@
         // Handle redirect result FIRST (user returning from Google sign-in)
         const handleRedirectResult = async () => {
           console.log('[Auth] Checking for redirect result...');
+          addDebugMessage('Checking redirect result...');
           try {
             const result = await firebaseAuth.getRedirectResult();
             console.log('[Auth] getRedirectResult returned:', result);
@@ -873,16 +880,20 @@
             if (result && result.user) {
               console.log('[Auth] ✅ Sign-in via redirect successful!');
               console.log('[Auth] User:', result.user.displayName, result.user.email);
+              addDebugMessage('✅ Redirect successful: ' + result.user.displayName);
               // User will be picked up by onAuthStateChanged below
             } else if (result && result.credential) {
               console.log('[Auth] Got credential but no user?', result);
+              addDebugMessage('Got credential, no user?');
             } else {
               console.log('[Auth] No redirect result (normal page load or redirect pending)');
+              addDebugMessage('No redirect result (normal load)');
             }
           } catch (error) {
             console.error('[Auth] ❌ Redirect sign-in error:', error);
             console.error('[Auth] Error code:', error.code);
             console.error('[Auth] Error message:', error.message);
+            addDebugMessage('❌ Redirect error: ' + error.code);
 
             if (error.code === 'auth/unauthorized-domain') {
               alert('Firebase Error: baldwinag.com is not an authorized domain. Please add it in Firebase Console → Authentication → Settings → Authorized domains');
@@ -897,6 +908,7 @@
         const unsubscribe = firebaseAuth.onAuthStateChanged(async (user) => {
           console.log('[Auth] onAuthStateChanged triggered');
           console.log('[Auth] User state:', user ? `Signed in as ${user.displayName}` : 'Not signed in');
+          addDebugMessage('Auth state: ' + (user ? user.displayName : 'Not signed in'));
 
           setCurrentUser(user);
           setAuthLoading(false);
@@ -1190,6 +1202,7 @@
       // Authentication functions
       const handleSignIn = async () => {
         console.log('[Auth] Sign-in button clicked');
+        addDebugMessage('Sign-in button clicked');
 
         if (!firebaseAuth) {
           alert('Firebase is not configured. Running in local-only mode.');
@@ -1200,14 +1213,17 @@
           console.log('[Auth] Creating Google Auth provider...');
           const provider = new firebase.auth.GoogleAuthProvider();
           console.log('[Auth] Calling signInWithRedirect...');
+          addDebugMessage('Starting redirect to Google...');
 
           // Use redirect for mobile compatibility (no popups)
           await firebaseAuth.signInWithRedirect(provider);
           console.log('[Auth] ✅ Redirect initiated (should navigate to Google now)');
+          addDebugMessage('Redirect initiated');
         } catch (error) {
           console.error('[Auth] ❌ Sign-in error:', error);
           console.error('[Auth] Error code:', error.code);
           console.error('[Auth] Error message:', error.message);
+          addDebugMessage('ERROR: ' + error.message);
           alert('Sign-in failed: ' + error.message);
         }
       };
@@ -3369,6 +3385,16 @@
                 <p className="text-xs mt-2" style={{color: 'rgba(255,255,255,0.5)'}}>☁️ Sign in complete • Select a group to sync</p>
               )}
             </div>
+
+            {/* Debug Panel (temporary - for mobile troubleshooting) */}
+            {debugMessages.length > 0 && (
+              <div style={{background: 'rgba(0,0,0,0.5)', borderRadius: '12px', padding: '12px', marginBottom: '16px', border: '1px solid rgba(255,255,255,0.2)'}}>
+                <div style={{color: 'rgba(255,255,255,0.7)', fontSize: '11px', fontWeight: '600', marginBottom: '8px'}}>🔍 Debug Log:</div>
+                {debugMessages.map((msg, idx) => (
+                  <div key={idx} style={{color: 'rgba(255,255,255,0.6)', fontSize: '10px', fontFamily: 'monospace', marginBottom: '4px'}}>{msg}</div>
+                ))}
+              </div>
+            )}
 
             {/* Group Selector */}
             {currentUser && (
