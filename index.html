@@ -1253,6 +1253,19 @@
         try {
           console.log('[Auth] Creating Google Auth provider...');
           const provider = new firebase.auth.GoogleAuthProvider();
+
+          // Set custom parameters for better mobile compatibility
+          provider.setCustomParameters({
+            prompt: 'select_account',
+            // Explicitly set client ID to ensure proper OAuth flow
+            client_id: '527974081115-nqglcr92q8tm9p840s0a4n91jifbl95f.apps.googleusercontent.com'
+          });
+
+          // Add profile and email scopes
+          provider.addScope('profile');
+          provider.addScope('email');
+
+          console.log('[Auth] Provider configured with custom parameters');
           console.log('[Auth] Calling signInWithRedirect...');
           addDebugMessage('Starting redirect to Google...');
 
