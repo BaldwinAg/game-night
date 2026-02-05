@@ -899,11 +899,25 @@
             console.log('[Auth] Completing sign-in with email:', emailForSignIn);
             addDebugMessage('Completing sign-in...');
 
-            firebaseAuth.signInWithEmailLink(emailForSignIn, window.location.href)
+            // Try to set persistence to LOCAL before signing in
+            firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
+              .then(() => {
+                console.log('[Auth] Persistence set to LOCAL');
+                addDebugMessage('Persistence: LOCAL');
+                return firebaseAuth.signInWithEmailLink(emailForSignIn, window.location.href);
+              })
               .then((result) => {
                 console.log('[Auth] ✅ Email link sign-in successful!');
                 console.log('[Auth] User:', result.user.email);
+                console.log('[Auth] User ID:', result.user.uid);
                 addDebugMessage('✅ Signed in: ' + result.user.email);
+
+                // Check if auth persisted
+                setTimeout(() => {
+                  const currentUser = firebaseAuth.currentUser;
+                  console.log('[Auth] Current user after 1s:', currentUser?.email || 'null');
+                  addDebugMessage('User after 1s: ' + (currentUser?.email || 'null'));
+                }, 1000);
 
                 // Clear email from storage
                 window.localStorage.removeItem('emailForSignIn');
@@ -913,8 +927,14 @@
               })
               .catch((error) => {
                 console.error('[Auth] ❌ Email link sign-in error:', error);
-                addDebugMessage('❌ Sign-in failed: ' + error.code);
+                console.error('[Auth] Error code:', error.code);
+                console.error('[Auth] Error message:', error.message);
+                addDebugMessage('❌ Error: ' + error.code);
+                addDebugMessage('Msg: ' + error.message);
                 setEmailAuthError('Sign-in failed: ' + error.message);
+
+                // Clean up URL even on error
+                window.history.replaceState({}, document.title, window.location.pathname);
               });
           }
         }
