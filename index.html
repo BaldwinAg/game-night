@@ -208,9 +208,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 5.6.0 - Phone Authentication
+    // Version 5.7.0 - Email Link Authentication
     // ============================================
-    const APP_VERSION = '5.6.0';
+    const APP_VERSION = '5.7.0';
     
     // Firebase initialization (if configured)
     let firebaseApp = null;
@@ -873,12 +873,52 @@
       const [currentUser, setCurrentUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
 
-      // Phone authentication state
-      const [phoneNumber, setPhoneNumber] = useState('');
-      const [verificationCode, setVerificationCode] = useState('');
-      const [confirmationResult, setConfirmationResult] = useState(null);
-      const [phoneAuthStep, setPhoneAuthStep] = useState('phone'); // 'phone' or 'code'
-      const [phoneAuthError, setPhoneAuthError] = useState('');
+      // Email link authentication state
+      const [email, setEmail] = useState('');
+      const [emailLinkSent, setEmailLinkSent] = useState(false);
+      const [emailAuthError, setEmailAuthError] = useState('');
+
+      // Check if user is returning from email link
+      useEffect(() => {
+        if (!firebaseAuth) return;
+
+        // Check if this is a sign-in link
+        if (firebaseAuth.isSignInWithEmailLink(window.location.href)) {
+          console.log('[Auth] Detected email link sign-in');
+          addDebugMessage('Detected email link...');
+
+          // Get email from localStorage
+          let emailForSignIn = window.localStorage.getItem('emailForSignIn');
+
+          if (!emailForSignIn) {
+            // If missing, ask user to provide email again
+            emailForSignIn = window.prompt('Please provide your email for confirmation');
+          }
+
+          if (emailForSignIn) {
+            console.log('[Auth] Completing sign-in with email:', emailForSignIn);
+            addDebugMessage('Completing sign-in...');
+
+            firebaseAuth.signInWithEmailLink(emailForSignIn, window.location.href)
+              .then((result) => {
+                console.log('[Auth] ✅ Email link sign-in successful!');
+                console.log('[Auth] User:', result.user.email);
+                addDebugMessage('✅ Signed in: ' + result.user.email);
+
+                // Clear email from storage
+                window.localStorage.removeItem('emailForSignIn');
+
+                // Clean up URL (remove query params)
+                window.history.replaceState({}, document.title, window.location.pathname);
+              })
+              .catch((error) => {
+                console.error('[Auth] ❌ Email link sign-in error:', error);
+                addDebugMessage('❌ Sign-in failed: ' + error.code);
+                setEmailAuthError('Sign-in failed: ' + error.message);
+              });
+          }
+        }
+      }, []);
 
       // Firebase Auth Observer - Listen for auth state changes
       useEffect(() => {
@@ -1183,102 +1223,43 @@
       };
 
       // Authentication functions
-      // Phone Authentication - Step 1: Send verification code
-      const sendVerificationCode = async () => {
+      // Email Link Authentication - Send sign-in link to email
+      const sendSignInLink = async () => {
         if (!firebaseAuth) {
           alert('Firebase is not configured. Running in local-only mode.');
           return;
         }
 
-        if (!phoneNumber || phoneNumber.length < 10) {
-          setPhoneAuthError('Please enter a valid phone number');
+        if (!email || !email.includes('@')) {
+          setEmailAuthError('Please enter a valid email address');
           return;
         }
 
         try {
-          setPhoneAuthError('');
-          console.log('[Auth] Sending verification code to:', phoneNumber);
-          addDebugMessage('Sending code to ' + phoneNumber);
+          setEmailAuthError('');
+          console.log('[Auth] Sending sign-in link to:', email);
+          addDebugMessage('Sending link to ' + email);
 
-          // Format phone number (add +1 if US number without country code)
-          let formattedPhone = phoneNumber.trim();
-          if (!formattedPhone.startsWith('+')) {
-            formattedPhone = '+1' + formattedPhone.replace(/\D/g, ''); // Remove non-digits, add +1
-          }
+          const actionCodeSettings = {
+            url: window.location.origin + window.location.pathname, // Return to same page
+            handleCodeInApp: true
+          };
 
-          // Initialize reCAPTCHA verifier (invisible)
-          if (!window.recaptchaVerifier) {
-            window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-              size: 'invisible',
-              callback: (response) => {
-                console.log('[Auth] reCAPTCHA verified');
-              }
-            });
-          }
+          await firebaseAuth.sendSignInLinkToEmail(email, actionCodeSettings);
 
-          // Send SMS
-          const confirmation = await firebaseAuth.signInWithPhoneNumber(formattedPhone, window.recaptchaVerifier);
-          setConfirmationResult(confirmation);
-          setPhoneAuthStep('code');
-          console.log('[Auth] ✅ Verification code sent');
-          addDebugMessage('✅ Code sent! Check your texts');
+          // Save email to localStorage for verification when user returns
+          window.localStorage.setItem('emailForSignIn', email);
+
+          setEmailLinkSent(true);
+          console.log('[Auth] ✅ Sign-in link sent');
+          addDebugMessage('✅ Link sent! Check your email');
 
         } catch (error) {
-          console.error('[Auth] ❌ SMS send error:', error);
+          console.error('[Auth] ❌ Email send error:', error);
           console.error('[Auth] Error code:', error.code);
-          setPhoneAuthError('Failed to send code: ' + error.message);
+          setEmailAuthError('Failed to send link: ' + error.message);
           addDebugMessage('❌ Error: ' + error.code);
-
-          // Reset reCAPTCHA on error
-          if (window.recaptchaVerifier) {
-            window.recaptchaVerifier.clear();
-            window.recaptchaVerifier = null;
-          }
         }
-      };
-
-      // Phone Authentication - Step 2: Verify code and sign in
-      const verifyCode = async () => {
-        if (!confirmationResult) {
-          setPhoneAuthError('Please request a code first');
-          return;
-        }
-
-        if (!verificationCode || verificationCode.length !== 6) {
-          setPhoneAuthError('Please enter the 6-digit code');
-          return;
-        }
-
-        try {
-          setPhoneAuthError('');
-          console.log('[Auth] Verifying code:', verificationCode);
-          addDebugMessage('Verifying code...');
-
-          const result = await confirmationResult.confirm(verificationCode);
-          console.log('[Auth] ✅ Sign-in successful!');
-          console.log('[Auth] User:', result.user.uid);
-          addDebugMessage('✅ Signed in!');
-
-          // Reset form
-          setPhoneNumber('');
-          setVerificationCode('');
-          setConfirmationResult(null);
-          setPhoneAuthStep('phone');
-
-        } catch (error) {
-          console.error('[Auth] ❌ Verification error:', error);
-          console.error('[Auth] Error code:', error.code);
-          setPhoneAuthError('Invalid code. Please try again.');
-          addDebugMessage('❌ Invalid code');
-        }
-      };
-
-      // Go back to phone number entry
-      const resetPhoneAuth = () => {
-        setPhoneAuthStep('phone');
-        setVerificationCode('');
-        setPhoneAuthError('');
-        setConfirmationResult(null);
       };
 
       const handleSignOut = async () => {
@@ -3422,14 +3403,14 @@
                   </div>
                 ) : (
                   <div style={{display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end'}}>
-                    {phoneAuthStep === 'phone' ? (
+                    {!emailLinkSent ? (
                       <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
                         <input
-                          type="tel"
-                          placeholder="Phone: 555-123-4567"
-                          value={phoneNumber}
-                          onChange={(e) => setPhoneNumber(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && sendVerificationCode()}
+                          type="email"
+                          placeholder="your@email.com"
+                          value={email}
+                          onChange={(e) => setEmail(e.target.value)}
+                          onKeyDown={(e) => e.key === 'Enter' && sendSignInLink()}
                           style={{
                             background: 'rgba(255,255,255,0.1)',
                             border: '1px solid rgba(255,255,255,0.3)',
@@ -3437,11 +3418,11 @@
                             padding: '8px 12px',
                             color: 'white',
                             fontSize: '14px',
-                            width: '160px'
+                            width: '180px'
                           }}
                         />
                         <button
-                          onClick={sendVerificationCode}
+                          onClick={sendSignInLink}
                           style={{
                             background: 'rgba(34, 197, 94, 0.8)',
                             border: 'none',
@@ -3452,62 +3433,35 @@
                             cursor: 'pointer',
                             fontWeight: '500'
                           }}>
-                          📱 Send Code
+                          📧 Send Link
                         </button>
                       </div>
                     ) : (
-                      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                        <input
-                          type="text"
-                          inputMode="numeric"
-                          placeholder="6-digit code"
-                          value={verificationCode}
-                          onChange={(e) => setVerificationCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                          onKeyDown={(e) => e.key === 'Enter' && verifyCode()}
-                          style={{
-                            background: 'rgba(255,255,255,0.1)',
-                            border: '1px solid rgba(255,255,255,0.3)',
-                            borderRadius: '8px',
-                            padding: '8px 12px',
-                            color: 'white',
-                            fontSize: '14px',
-                            width: '120px',
-                            textAlign: 'center',
-                            letterSpacing: '4px',
-                            fontWeight: '600'
+                      <div style={{display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', padding: '12px', background: 'rgba(34, 197, 94, 0.2)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.5)'}}>
+                        <div style={{color: '#86efac', fontSize: '14px', fontWeight: '500', textAlign: 'center'}}>
+                          ✅ Sign-in link sent!<br/>
+                          <span style={{fontSize: '12px', fontWeight: '400'}}>Check your email and click the link</span>
+                        </div>
+                        <button
+                          onClick={() => {
+                            setEmailLinkSent(false);
+                            setEmail('');
                           }}
-                        />
-                        <button
-                          onClick={verifyCode}
-                          style={{
-                            background: 'rgba(34, 197, 94, 0.8)',
-                            border: 'none',
-                            borderRadius: '8px',
-                            padding: '8px 16px',
-                            color: 'white',
-                            fontSize: '14px',
-                            cursor: 'pointer',
-                            fontWeight: '500'
-                          }}>
-                          ✓ Verify
-                        </button>
-                        <button
-                          onClick={resetPhoneAuth}
                           style={{
                             background: 'rgba(255,255,255,0.2)',
                             border: 'none',
                             borderRadius: '8px',
-                            padding: '8px 12px',
+                            padding: '6px 12px',
                             color: 'white',
-                            fontSize: '13px',
+                            fontSize: '12px',
                             cursor: 'pointer'
                           }}>
-                          ← Back
+                          Send to different email
                         </button>
                       </div>
                     )}
-                    {phoneAuthError && (
-                      <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '500'}}>{phoneAuthError}</div>
+                    {emailAuthError && (
+                      <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '500'}}>{emailAuthError}</div>
                     )}
                   </div>
                 )}
