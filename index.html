@@ -201,9 +201,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 6.0.0 - Local-Only (No Firebase)
+    // Version 6.0.1 - Local-Only (No Firebase)
     // ============================================
-    const APP_VERSION = '6.0.0';
+    const APP_VERSION = '6.0.1';
 
     console.log(`[Game Night v${APP_VERSION}] Local-only mode`);
 
@@ -1001,13 +1001,23 @@
       const EditScoreModal = () => {
         if (!editingScore) return null;
         const player = players.find(p => p.id === editingScore.playerId);
+        const inputRef = React.useRef(null);
+
+        React.useEffect(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+          }
+        }, []);
+
         return (
           <div className="modal-overlay">
             <div className="modal">
               <div className="modal-title">Edit Score</div>
               <div className="modal-text">{player?.name} - Round {editingScore.roundIndex + 1}</div>
-              <input type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
-                value={editingScore.value} onChange={(e) => setEditingScore({...editingScore, value: e.target.value})} autoFocus />
+              <input ref={inputRef} type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
+                value={editingScore.value} onChange={(e) => setEditingScore({...editingScore, value: e.target.value})}
+                onKeyDown={(e) => e.key === 'Enter' && saveEditScore()} />
               <div className="modal-buttons">
                 <button className="btn btn-cancel" onClick={() => setEditingScore(null)}>Cancel</button>
                 <button className="btn accent-amber text-white" onClick={saveEditScore}>Save</button>
@@ -1021,13 +1031,23 @@
         if (!editingYahtzee) return null;
         const player = players.find(p => p.id === editingYahtzee.playerId);
         const cat = [...YAHTZEE_CATEGORIES.upper, ...YAHTZEE_CATEGORIES.lower].find(c => c.key === editingYahtzee.category);
+        const inputRef = React.useRef(null);
+
+        React.useEffect(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+          }
+        }, []);
+
         return (
           <div className="modal-overlay">
             <div className="modal">
               <div className="modal-title">Edit Score</div>
               <div className="modal-text">{player?.name} - {cat?.name}</div>
-              <input type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
-                value={editingYahtzee.value} onChange={(e) => setEditingYahtzee({...editingYahtzee, value: e.target.value})} autoFocus />
+              <input ref={inputRef} type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
+                value={editingYahtzee.value} onChange={(e) => setEditingYahtzee({...editingYahtzee, value: e.target.value})}
+                onKeyDown={(e) => e.key === 'Enter' && saveEditYahtzee()} />
               <div className="modal-buttons">
                 <button className="btn btn-cancel" onClick={() => setEditingYahtzee(null)}>Cancel</button>
                 <button className="btn accent-amber text-white" onClick={saveEditYahtzee}>Save</button>
@@ -1040,6 +1060,15 @@
       const EditCribbageModal = () => {
         if (!editingCribbage) return null;
         const player = players[editingCribbage.playerIndex];
+        const inputRef = React.useRef(null);
+
+        React.useEffect(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+          }
+        }, []);
+
         const saveCribbageEdit = () => {
           const newTotal = Math.max(0, Math.min(121, parseInt(editingCribbage.value) || 0));
           if (newTotal >= 121) {
@@ -1056,8 +1085,9 @@
             <div className="modal">
               <div className="modal-title">Edit Score</div>
               <div className="modal-text">{player?.name}</div>
-              <input type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
-                value={editingCribbage.value} onChange={(e) => setEditingCribbage({...editingCribbage, value: e.target.value})} autoFocus />
+              <input ref={inputRef} type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
+                value={editingCribbage.value} onChange={(e) => setEditingCribbage({...editingCribbage, value: e.target.value})}
+                onKeyDown={(e) => e.key === 'Enter' && saveCribbageEdit()} />
               <div className="modal-buttons">
                 <button className="btn btn-cancel" onClick={() => setEditingCribbage(null)}>Cancel</button>
                 <button className="btn accent-emerald text-white" onClick={saveCribbageEdit}>Save</button>
@@ -1070,11 +1100,19 @@
       const EditPitchModal = () => {
         if (!editingPitch) return null;
         const effectiveTarget = pitchConfig.customTarget ? parseInt(pitchConfig.customTarget) : pitchConfig.targetScore;
-        
+        const inputRef = React.useRef(null);
+
+        React.useEffect(() => {
+          if (inputRef.current) {
+            inputRef.current.focus();
+            inputRef.current.select();
+          }
+        }, []);
+
         const savePitchEdit = () => {
           const newTotal = parseInt(editingPitch.value) || 0;
           let newPlayers = [...players];
-          
+
           if (editingPitch.team) {
             // Team mode - update player 0 for team 1, player 1 for team 2
             const playerIdx = editingPitch.team === 1 ? 0 : 1;
@@ -1083,10 +1121,10 @@
             // Individual mode
             newPlayers[editingPitch.playerIndex] = {...newPlayers[editingPitch.playerIndex], total: newTotal};
           }
-          
+
           setPlayers(newPlayers);
           setEditingPitch(null);
-          
+
           // Check for winner
           if (newTotal >= effectiveTarget) {
             const winnerPlayer = newPlayers.find(p => p.total >= effectiveTarget);
@@ -1096,14 +1134,15 @@
             }
           }
         };
-        
+
         return (
           <div className="modal-overlay">
             <div className="modal">
               <div className="modal-title">Edit Score</div>
               <div className="modal-text">{editingPitch.team ? `Team ${editingPitch.team}` : players[editingPitch.playerIndex]?.name}</div>
-              <input type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
-                value={editingPitch.value} onChange={(e) => setEditingPitch({...editingPitch, value: e.target.value})} autoFocus />
+              <input ref={inputRef} type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
+                value={editingPitch.value} onChange={(e) => setEditingPitch({...editingPitch, value: e.target.value})}
+                onKeyDown={(e) => e.key === 'Enter' && savePitchEdit()} />
               <div className="modal-buttons">
                 <button className="btn btn-cancel" onClick={() => setEditingPitch(null)}>Cancel</button>
                 <button className="btn accent-purple text-white" onClick={savePitchEdit}>Save</button>
