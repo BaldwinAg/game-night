@@ -208,9 +208,9 @@
   <script type="text/babel">
     // ============================================
     // Game Night Scorekeeper
-    // Version 5.7.0 - Email Link Authentication
+    // Version 5.8.0 - Anonymous Auth with Group Codes
     // ============================================
-    const APP_VERSION = '5.7.0';
+    const APP_VERSION = '5.8.0';
     
     // Firebase initialization (if configured)
     let firebaseApp = null;
@@ -873,71 +873,31 @@
       const [currentUser, setCurrentUser] = useState(null);
       const [authLoading, setAuthLoading] = useState(true);
 
-      // Email link authentication state
-      const [email, setEmail] = useState('');
-      const [emailLinkSent, setEmailLinkSent] = useState(false);
-      const [emailAuthError, setEmailAuthError] = useState('');
-
-      // Check if user is returning from email link
+      // Anonymous authentication - sign in automatically on load
       useEffect(() => {
-        if (!firebaseAuth) return;
-
-        // Check if this is a sign-in link
-        if (firebaseAuth.isSignInWithEmailLink(window.location.href)) {
-          console.log('[Auth] Detected email link sign-in');
-          addDebugMessage('Detected email link...');
-
-          // Get email from localStorage
-          let emailForSignIn = window.localStorage.getItem('emailForSignIn');
-
-          if (!emailForSignIn) {
-            // If missing, ask user to provide email again
-            emailForSignIn = window.prompt('Please provide your email for confirmation');
-          }
-
-          if (emailForSignIn) {
-            console.log('[Auth] Completing sign-in with email:', emailForSignIn);
-            addDebugMessage('Completing sign-in...');
-
-            // Try to set persistence to LOCAL before signing in
-            firebaseAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL)
-              .then(() => {
-                console.log('[Auth] Persistence set to LOCAL');
-                addDebugMessage('Persistence: LOCAL');
-                return firebaseAuth.signInWithEmailLink(emailForSignIn, window.location.href);
-              })
-              .then((result) => {
-                console.log('[Auth] ✅ Email link sign-in successful!');
-                console.log('[Auth] User:', result.user.email);
-                console.log('[Auth] User ID:', result.user.uid);
-                addDebugMessage('✅ Signed in: ' + result.user.email);
-
-                // Check if auth persisted
-                setTimeout(() => {
-                  const currentUser = firebaseAuth.currentUser;
-                  console.log('[Auth] Current user after 1s:', currentUser?.email || 'null');
-                  addDebugMessage('User after 1s: ' + (currentUser?.email || 'null'));
-                }, 1000);
-
-                // Clear email from storage
-                window.localStorage.removeItem('emailForSignIn');
-
-                // Clean up URL (remove query params)
-                window.history.replaceState({}, document.title, window.location.pathname);
-              })
-              .catch((error) => {
-                console.error('[Auth] ❌ Email link sign-in error:', error);
-                console.error('[Auth] Error code:', error.code);
-                console.error('[Auth] Error message:', error.message);
-                addDebugMessage('❌ Error: ' + error.code);
-                addDebugMessage('Msg: ' + error.message);
-                setEmailAuthError('Sign-in failed: ' + error.message);
-
-                // Clean up URL even on error
-                window.history.replaceState({}, document.title, window.location.pathname);
-              });
-          }
+        if (!firebaseAuth) {
+          setAuthLoading(false);
+          return;
         }
+
+        // Sign in anonymously if not already signed in
+        const signInAnonymously = async () => {
+          try {
+            if (!firebaseAuth.currentUser) {
+              console.log('[Auth] Signing in anonymously...');
+              addDebugMessage('Signing in anonymously...');
+              const result = await firebaseAuth.signInAnonymously();
+              console.log('[Auth] ✅ Anonymous sign-in successful');
+              console.log('[Auth] User ID:', result.user.uid);
+              addDebugMessage('✅ Anonymous ID: ' + result.user.uid.substring(0, 8));
+            }
+          } catch (error) {
+            console.error('[Auth] ❌ Anonymous sign-in error:', error);
+            addDebugMessage('❌ Auth error: ' + error.code);
+          }
+        };
+
+        signInAnonymously();
       }, []);
 
       // Firebase Auth Observer - Listen for auth state changes
@@ -1242,45 +1202,7 @@
         }
       };
 
-      // Authentication functions
-      // Email Link Authentication - Send sign-in link to email
-      const sendSignInLink = async () => {
-        if (!firebaseAuth) {
-          alert('Firebase is not configured. Running in local-only mode.');
-          return;
-        }
-
-        if (!email || !email.includes('@')) {
-          setEmailAuthError('Please enter a valid email address');
-          return;
-        }
-
-        try {
-          setEmailAuthError('');
-          console.log('[Auth] Sending sign-in link to:', email);
-          addDebugMessage('Sending link to ' + email);
-
-          const actionCodeSettings = {
-            url: window.location.origin + window.location.pathname, // Return to same page
-            handleCodeInApp: true
-          };
-
-          await firebaseAuth.sendSignInLinkToEmail(email, actionCodeSettings);
-
-          // Save email to localStorage for verification when user returns
-          window.localStorage.setItem('emailForSignIn', email);
-
-          setEmailLinkSent(true);
-          console.log('[Auth] ✅ Sign-in link sent');
-          addDebugMessage('✅ Link sent! Check your email');
-
-        } catch (error) {
-          console.error('[Auth] ❌ Email send error:', error);
-          console.error('[Auth] Error code:', error.code);
-          setEmailAuthError('Failed to send link: ' + error.message);
-          addDebugMessage('❌ Error: ' + error.code);
-        }
-      };
+      // Authentication is now automatic (anonymous sign-in on load)
 
       const handleSignOut = async () => {
         if (!firebaseAuth) return;
@@ -3404,100 +3326,18 @@
       if (screen === 'home') return (
         <div className="app bg-slate">
           <div className="container">
-            {/* Auth Header */}
-            {firebaseConfigured && (
-              <div style={{display: 'flex', justifyContent: 'flex-end', paddingTop: '16px', paddingBottom: '8px'}}>
-                {authLoading ? (
-                  <div style={{color: 'rgba(255,255,255,0.5)', fontSize: '14px'}}>Loading...</div>
-                ) : currentUser ? (
-                  <div style={{display: 'flex', alignItems: 'center', gap: '12px'}}>
-                    <div style={{display: 'flex', alignItems: 'center', gap: '8px'}}>
-                      {currentUser.photoURL && (
-                        <img src={currentUser.photoURL} alt="Profile" style={{width: '32px', height: '32px', borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)'}} />
-                      )}
-                      <span style={{color: 'white', fontSize: '14px', fontWeight: '500'}}>
-                        {currentUser.displayName || currentUser.phoneNumber || 'User'}
-                      </span>
-                    </div>
-                    <button onClick={handleSignOut} style={{background: 'rgba(255,255,255,0.2)', border: 'none', borderRadius: '8px', padding: '6px 12px', color: 'white', fontSize: '13px', cursor: 'pointer', fontWeight: '500'}}>Sign Out</button>
-                  </div>
-                ) : (
-                  <div style={{display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end'}}>
-                    {!emailLinkSent ? (
-                      <div style={{display: 'flex', gap: '8px', alignItems: 'center'}}>
-                        <input
-                          type="email"
-                          placeholder="your@email.com"
-                          value={email}
-                          onChange={(e) => setEmail(e.target.value)}
-                          onKeyDown={(e) => e.key === 'Enter' && sendSignInLink()}
-                          style={{
-                            background: 'rgba(255,255,255,0.1)',
-                            border: '1px solid rgba(255,255,255,0.3)',
-                            borderRadius: '8px',
-                            padding: '8px 12px',
-                            color: 'white',
-                            fontSize: '14px',
-                            width: '180px'
-                          }}
-                        />
-                        <button
-                          onClick={sendSignInLink}
-                          style={{
-                            background: 'rgba(34, 197, 94, 0.8)',
-                            border: 'none',
-                            borderRadius: '8px',
-                            padding: '8px 16px',
-                            color: 'white',
-                            fontSize: '14px',
-                            cursor: 'pointer',
-                            fontWeight: '500'
-                          }}>
-                          📧 Send Link
-                        </button>
-                      </div>
-                    ) : (
-                      <div style={{display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', padding: '12px', background: 'rgba(34, 197, 94, 0.2)', borderRadius: '12px', border: '1px solid rgba(34, 197, 94, 0.5)'}}>
-                        <div style={{color: '#86efac', fontSize: '14px', fontWeight: '500', textAlign: 'center'}}>
-                          ✅ Sign-in link sent!<br/>
-                          <span style={{fontSize: '12px', fontWeight: '400'}}>Check your email and click the link</span>
-                        </div>
-                        <button
-                          onClick={() => {
-                            setEmailLinkSent(false);
-                            setEmail('');
-                          }}
-                          style={{
-                            background: 'rgba(255,255,255,0.2)',
-                            border: 'none',
-                            borderRadius: '8px',
-                            padding: '6px 12px',
-                            color: 'white',
-                            fontSize: '12px',
-                            cursor: 'pointer'
-                          }}>
-                          Send to different email
-                        </button>
-                      </div>
-                    )}
-                    {emailAuthError && (
-                      <div style={{color: '#fca5a5', fontSize: '12px', fontWeight: '500'}}>{emailAuthError}</div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
+            {/* Auth is automatic - no UI needed */}
 
             <div className="text-center mb-8 pt-8">
               <h1 className="text-4xl font-bold text-white mb-2"><img src="./icon-192.png" alt="" style={{width: '40px', height: '40px', display: 'inline-block', verticalAlign: 'middle', marginRight: '8px', borderRadius: '8px'}} />Game Night</h1>
               <p className="text-light mb-1">Score Keeper</p>
               <p className="text-xs" style={{color: '#22c55e'}}>presented by <span className="font-semibold">Baldwin Ag</span></p>
               <p className="text-xs mt-2" style={{color: 'rgba(255,255,255,0.4)'}}>v{APP_VERSION}</p>
-              {currentUser && selectedGroupId && (
+              {selectedGroupId && (
                 <p className="text-xs mt-2" style={{color: '#22c55e'}}>☁️ Cloud Sync Active</p>
               )}
-              {currentUser && !selectedGroupId && (
-                <p className="text-xs mt-2" style={{color: 'rgba(255,255,255,0.5)'}}>☁️ Sign in complete • Select a group to sync</p>
+              {!selectedGroupId && firebaseConfigured && (
+                <p className="text-xs mt-2" style={{color: 'rgba(255,255,255,0.5)'}}>💡 Create or join a group to sync wins</p>
               )}
 
               {/* Storage Check Button */}
