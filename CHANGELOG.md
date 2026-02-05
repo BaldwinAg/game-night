@@ -2,6 +2,53 @@
 
 All notable changes to Game Night Scorekeeper will be documented in this file.
 
+## [6.0.0] - 2026-02-05
+
+### Removed - Firebase Completely Stripped Out
+- **All Firebase Code Removed**: App is now 100% local-only with no cloud dependencies
+- **Authentication Removed**: No more Google Sign-In, phone auth, email link, or anonymous auth
+- **Player Groups Removed**: Removed group creation, joining, management, and invite codes
+- **Cloud Sync Removed**: All cloud sync features and Firestore integration removed
+- **Debug UI Removed**: Removed storage check button and debug panel
+
+### Reason for Change
+After extensive testing with multiple authentication methods (Google Sign-In redirect, phone authentication, email link passwordless, and anonymous authentication), all failed on mobile Safari due to Intelligent Tracking Prevention blocking Firebase-specific storage. Despite regular localStorage working perfectly (16 keys), Firebase keys remained at 0, making cloud features unusable on mobile devices.
+
+**User decision**: "i don't think firebase is a functional system"
+
+### What Still Works
+- ✅ All 7 games (Flip 7, Yahtzee, Phase 10, Farkle, Gin Rummy, Cribbage, Pitch)
+- ✅ Pitch house rules save/load (localStorage)
+- ✅ Two-phase Cribbage scoring with corrections
+- ✅ All scoring corrections and improvements from v5.3.0
+- ✅ Drag-and-drop player reordering
+- ✅ Score editing for all games
+- ✅ Wins leaderboard (localStorage)
+- ✅ Export/import wins data (CSV/JSON)
+- ✅ Saved players list
+- ✅ All emoji fixes (142 UTF-8 corrections from v5.3.0)
+- ✅ Offline PWA functionality
+- ✅ Works perfectly on all devices (mobile, tablet, desktop)
+
+### Technical Changes
+- Removed Firebase SDK script tags
+- Removed Firebase initialization and configuration
+- Simplified `savePitchHouseRules()` and `loadPitchHouseRules()` to localStorage-only
+- Removed all group management functions and UI components
+- Removed authentication state management and UI
+- Simplified win recording to localStorage only
+- Updated service worker to v32
+- Updated app version to 6.0.0
+- Code reduction: -844 lines, +31 lines (813 lines net reduction)
+
+### Migration Notes
+- All local data (wins, saved players, house rules) preserved
+- No action needed from users
+- PWA will auto-update on next launch
+- Firebase project can be deleted (no longer needed)
+
+---
+
 ## [5.5.0] - 2026-02-03
 
 ### Added - Cloud Sync for Groups

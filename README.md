@@ -1,26 +1,26 @@
 # 🎲 Game Night Scorekeeper
 
-**Version 5.5.0** | Cloud Sync for Groups
+**Version 6.0.0** | Local-Only (No Firebase)
 
 A mobile-friendly Progressive Web App (PWA) for tracking scores across multiple card and dice games. Perfect for family game nights!
 
 **Presented by Baldwin Ag**
 
-## 🆕 What's New in v5.5.0
+## 🆕 What's New in v6.0.0
 
-- **☁️ Cloud Sync**: Real shared leaderboards for groups - all members see same wins!
-- **🏆 Shared Scoreboards**: Create "Pitch Buddies" and "Family" with separate leaderboards
-- **📱 Real-Time Sync**: Wins sync instantly across all devices
-- **🎮 Auto Match Recording**: Games automatically save to cloud when group selected
-- **👥 Player Groups**: Create groups, share invite codes, manage members
-- **🔀 Plus all v5.3.0 & v5.4.0 features**: Drag-and-drop, house rules, team selection
+- **🔒 100% Local**: All Firebase code removed - app works entirely offline
+- **📱 Mobile Reliable**: No more authentication issues on mobile Safari
+- **💾 localStorage Only**: All data saved locally on your device
+- **⚡ Fast & Simple**: Cleaner codebase with 813 fewer lines of code
+- **🎮 All Features Preserved**: Games, house rules, scoring corrections all intact
 
-### Coming Soon
-- **v5.6.0**: Match history view with dates and scores
-- **v5.7.0**: Points system (not just wins)
-- **v5.8.0**: Enhanced offline support with sync queue
+### What Was Removed
+- Firebase Authentication (Google Sign-In, phone, email link, anonymous)
+- Player Groups and cloud sync features
+- Firestore database integration
 
-See [ROADMAP.md](ROADMAP.md) for the full development plan.
+### Why the Change?
+After extensive testing, Firebase Web SDK proved incompatible with mobile Safari due to Intelligent Tracking Prevention. The app now uses localStorage exclusively and works reliably on all devices.
 
 ---
 
@@ -45,7 +45,7 @@ See [ROADMAP.md](ROADMAP.md) for the full development plan.
 - 📴 **Offline capable** - PWA with service worker caching
 - 🏠 **Add to home screen** - Install as an app on any device
 - 💾 **Auto-save** - Wins and saved players persist in localStorage
-- ☁️ **Cloud-ready** - Firebase integration for future sync features
+- 🔒 **100% Local** - No cloud dependencies, works entirely offline
 
 ### Scoring Features
 - ✏️ **Editable scores** - Tap any score to edit mistakes
@@ -58,15 +58,6 @@ See [ROADMAP.md](ROADMAP.md) for the full development plan.
 - ➕ **Quick add** - Tap saved names to add to game
 - 🔄 **Reusable** - Same players across different games
 
-### Player Groups (Sign-In Required)
-- 👨‍👩‍👧‍👦 **Create groups** - Organize different friend circles
-- 🎟️ **Invite codes** - Share 6-character codes to invite members
-- 🔄 **Group switching** - Select active group from dropdown
-- 👑 **Owner controls** - Remove members, manage group
-- 🚪 **Leave groups** - Exit groups anytime with automatic ownership transfer
-- ⚡ **Real-time sync** - Changes appear instantly on all devices
-- 📊 **Up to 20 members** per group
-
 ### Wins Tracking
 - 🏆 **Leaderboard** - Track total wins per player
 - 📈 **Per-game stats** - See wins breakdown by game
@@ -76,17 +67,11 @@ See [ROADMAP.md](ROADMAP.md) for the full development plan.
 
 ## 🚀 Quick Start
 
-### Option A: Local Only (No Setup Required)
 1. Download all files to a folder
 2. Open `index.html` in a browser
 3. Start playing!
 
-### Option B: With Firebase Cloud Sync
-1. Download all files to a folder
-2. Follow [FIREBASE_SETUP.md](FIREBASE_SETUP.md) to configure Firebase
-3. Edit `firebase-config.js` with your Firebase project details
-4. Open `index.html` in a browser
-5. Sign in with Google to enable cloud features
+That's it! The app works entirely offline with no setup required.
 
 ---
 
@@ -94,14 +79,11 @@ See [ROADMAP.md](ROADMAP.md) for the full development plan.
 
 ```
 /games/
-├── index.html           # Main app (v5.0.0)
-├── firebase-config.js   # Firebase configuration (edit this!)
+├── index.html           # Main app (v6.0.0)
 ├── sw.js                # Service worker for offline
 ├── manifest.json        # PWA manifest
 ├── icon-192.png         # App icon
 ├── icon-512.png         # Large app icon
-├── FIREBASE_SETUP.md    # Firebase setup guide
-├── ROADMAP.md           # Development roadmap
 ├── CHANGELOG.md         # Version history
 └── README.md            # This file
 ```
@@ -127,9 +109,9 @@ See [ROADMAP.md](ROADMAP.md) for the full development plan.
 ### Built With
 - **React 18** - UI framework (loaded via CDN)
 - **Babel** - JSX transformation in browser
-- **Firebase** - Authentication & Firestore (optional)
 - **Plain CSS** - No build step required
-- **localStorage** - Local data persistence
+- **localStorage** - All data persistence
+- **Service Worker** - PWA offline caching
 
 ### Browser Support
 - Chrome / Chromium (recommended)
@@ -168,15 +150,15 @@ See [ROADMAP.md](ROADMAP.md) for the full development plan.
 - Unregister service worker in DevTools
 - Reinstall PWA
 
-### Firebase Not Working
-- Check `firebase-config.js` has your real config values
-- Verify authorized domains in Firebase Console
-- Check browser console for errors
-
 ### Scores Not Saving
 - Check localStorage is enabled
 - Check available storage space
 - Export data regularly as backup
+
+### Upgrading from v5.x to v6.0
+- All local data (wins, saved players, house rules) is preserved
+- Firebase data will no longer be accessible
+- Export your data before updating if you need a backup
 
 ---
 
@@ -194,12 +176,16 @@ This app is not affiliated with or endorsed by any game manufacturers.
 
 | Version | Date | Description |
 |---------|------|-------------|
-| 5.5.0 | Feb 2026 | Cloud sync for groups - real shared leaderboards |
-| 5.4.0 | Feb 2026 | Player groups infrastructure (create, join, manage) |
+| 6.0.0 | Feb 2026 | Remove all Firebase code - 100% local-only app |
+| 5.8.0 | Feb 2026 | Anonymous authentication attempt (failed) |
+| 5.7.0 | Feb 2026 | Email link authentication attempt (failed) |
+| 5.6.0 | Feb 2026 | Phone authentication attempt (failed) |
+| 5.5.1 | Feb 2026 | Google Sign-In redirect (failed on mobile) |
+| 5.5.0 | Feb 2026 | Cloud sync for groups (incompatible with Safari) |
+| 5.4.0 | Feb 2026 | Player groups infrastructure (removed in v6.0) |
 | 5.3.0 | Feb 2026 | Drag-and-drop reordering, House Rules, Pitch enhancements |
-| 5.2.0 | Jan 2025 | (Placeholder - not actually implemented) |
-| 5.1.0 | Jan 2025 | Google Sign-In authentication |
-| 5.0.0 | Jan 2025 | Firebase foundation, version display |
+| 5.1.0 | Jan 2025 | Google Sign-In popup (removed in v6.0) |
+| 5.0.0 | Jan 2025 | Firebase foundation (removed in v6.0) |
 | 4.11 | Jan 2025 | Modal-based score entry fix |
 | 4.8 | Jan 2025 | Pitch game added |
 | 4.3 | Jan 2025 | Saved players feature |
