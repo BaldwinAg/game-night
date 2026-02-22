@@ -2,6 +2,16 @@
 
 All notable changes to Game Night Scorekeeper will be documented in this file.
 
+## [6.0.2] - 2026-02-21
+
+### Fixed — Multi-Digit Score Input
+- **Score modals now accept multi-digit numbers**: Typing "25" correctly enters 25 instead of replacing "2" with "5"
+- Root cause: Score modals (Round Score, Edit Score, Edit Yahtzee) were defined as React components inside the render function, causing React to unmount/remount the input on every keystroke
+- Fix: All three modals moved to inline JSX so the input element persists between re-renders
+- Bumped service worker cache to v34 for immediate update
+
+---
+
 ## [6.0.0] - 2026-02-05
 
 ### Removed - Firebase Completely Stripped Out

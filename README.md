@@ -1,18 +1,18 @@
 # 🎲 Game Night Scorekeeper
 
-**Version 6.0.0** | Local-Only (No Firebase)
+**Version 6.0.2** | Local-Only (No Firebase)
 
 A mobile-friendly Progressive Web App (PWA) for tracking scores across multiple card and dice games. Perfect for family game nights!
 
 **Presented by Baldwin Ag**
 
-## 🆕 What's New in v6.0.0
+## 🆕 What's New in v6.0.2
 
+- **🔢 Multi-Digit Score Fix**: Score entry now correctly handles multi-digit numbers (e.g. typing "25" no longer replaces "2" with "5")
 - **🔒 100% Local**: All Firebase code removed - app works entirely offline
 - **📱 Mobile Reliable**: No more authentication issues on mobile Safari
 - **💾 localStorage Only**: All data saved locally on your device
-- **⚡ Fast & Simple**: Cleaner codebase with 813 fewer lines of code
-- **🎮 All Features Preserved**: Games, house rules, scoring corrections all intact
+- **⚡ Fast & Simple**: Cleaner codebase with no cloud dependencies
 
 ### What Was Removed
 - Firebase Authentication (Google Sign-In, phone, email link, anonymous)
