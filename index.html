@@ -962,100 +962,16 @@
         </div>
       );
 
-      const RoundScoreModal = () => {
-        if (!editingRoundScore) return null;
-        const player = players.find(p => p.id === editingRoundScore.playerId);
-        const inputRef = React.useRef(null);
-
-        React.useEffect(() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.select();
-          }
-        }, []);
-
-        const saveRoundScore = () => {
-          const val = editingRoundScore.value;
-          if (val === '' || val === '-' || /^-?\d*$/.test(val)) {
-            setRoundScores({ ...roundScores, [editingRoundScore.playerId]: val });
-          }
-          setEditingRoundScore(null);
-        };
-        return (
-          <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && setEditingRoundScore(null)}>
-            <div className="modal" onClick={(e) => e.stopPropagation()}>
-              <div className="modal-title">Enter Score</div>
-              <div className="modal-text">{player?.name}</div>
-              <input ref={inputRef} type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '28px', padding: '16px'}}
-                value={editingRoundScore.value} onChange={(e) => setEditingRoundScore({...editingRoundScore, value: e.target.value})}
-                onKeyDown={(e) => e.key === 'Enter' && saveRoundScore()} />
-              <div className="modal-buttons">
-                <button className="btn btn-cancel" onClick={() => setEditingRoundScore(null)}>Cancel</button>
-                <button className={`btn accent-${game?.color || 'amber'} text-white`} onClick={saveRoundScore}>OK</button>
-              </div>
-            </div>
-          </div>
-        );
+      const saveRoundScore = () => {
+        if (!editingRoundScore) return;
+        const val = editingRoundScore.value;
+        if (val === '' || val === '-' || /^-?\d*$/.test(val)) {
+          setRoundScores({ ...roundScores, [editingRoundScore.playerId]: val });
+        }
+        setEditingRoundScore(null);
       };
 
-      const EditScoreModal = () => {
-        if (!editingScore) return null;
-        const player = players.find(p => p.id === editingScore.playerId);
-        const inputRef = React.useRef(null);
-
-        React.useEffect(() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.select();
-          }
-        }, []);
-
-        return (
-          <div className="modal-overlay">
-            <div className="modal">
-              <div className="modal-title">Edit Score</div>
-              <div className="modal-text">{player?.name} - Round {editingScore.roundIndex + 1}</div>
-              <input ref={inputRef} type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
-                value={editingScore.value} onChange={(e) => setEditingScore({...editingScore, value: e.target.value})}
-                onKeyDown={(e) => e.key === 'Enter' && saveEditScore()} />
-              <div className="modal-buttons">
-                <button className="btn btn-cancel" onClick={() => setEditingScore(null)}>Cancel</button>
-                <button className="btn accent-amber text-white" onClick={saveEditScore}>Save</button>
-              </div>
-            </div>
-          </div>
-        );
-      };
-
-      const EditYahtzeeModal = () => {
-        if (!editingYahtzee) return null;
-        const player = players.find(p => p.id === editingYahtzee.playerId);
-        const cat = [...YAHTZEE_CATEGORIES.upper, ...YAHTZEE_CATEGORIES.lower].find(c => c.key === editingYahtzee.category);
-        const inputRef = React.useRef(null);
-
-        React.useEffect(() => {
-          if (inputRef.current) {
-            inputRef.current.focus();
-            inputRef.current.select();
-          }
-        }, []);
-
-        return (
-          <div className="modal-overlay">
-            <div className="modal">
-              <div className="modal-title">Edit Score</div>
-              <div className="modal-text">{player?.name} - {cat?.name}</div>
-              <input ref={inputRef} type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
-                value={editingYahtzee.value} onChange={(e) => setEditingYahtzee({...editingYahtzee, value: e.target.value})}
-                onKeyDown={(e) => e.key === 'Enter' && saveEditYahtzee()} />
-              <div className="modal-buttons">
-                <button className="btn btn-cancel" onClick={() => setEditingYahtzee(null)}>Cancel</button>
-                <button className="btn accent-amber text-white" onClick={saveEditYahtzee}>Save</button>
-              </div>
-            </div>
-          </div>
-        );
-      };
+      // EditScoreModal and EditYahtzeeModal rendered inline to avoid remount bug
 
       const EditCribbageModal = () => {
         if (!editingCribbage) return null;
@@ -2934,12 +2850,75 @@
           </div>
           {showResetConfirm && <ResetConfirmModal />}
           {showHomeConfirm && <HomeConfirmModal />}
-          {editingScore && <EditScoreModal />}
-          {editingYahtzee && <EditYahtzeeModal />}
+          {editingScore && (
+            <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && setEditingScore(null)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-title">Edit Score</div>
+                <div className="modal-text">{players.find(p => p.id === editingScore.playerId)?.name} - Round {editingScore.roundIndex + 1}</div>
+                <input type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
+                  autoFocus
+                  value={editingScore.value}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '' || v === '-' || /^-?\d*$/.test(v)) {
+                      setEditingScore({...editingScore, value: v});
+                    }
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && saveEditScore()} />
+                <div className="modal-buttons">
+                  <button className="btn btn-cancel" onClick={() => setEditingScore(null)}>Cancel</button>
+                  <button className="btn accent-amber text-white" onClick={saveEditScore}>Save</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {editingYahtzee && (
+            <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && setEditingYahtzee(null)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-title">Edit Score</div>
+                <div className="modal-text">{players.find(p => p.id === editingYahtzee.playerId)?.name} - {[...YAHTZEE_CATEGORIES.upper, ...YAHTZEE_CATEGORIES.lower].find(c => c.key === editingYahtzee.category)?.name}</div>
+                <input type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '24px'}}
+                  autoFocus
+                  value={editingYahtzee.value}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '' || v === '-' || /^-?\d*$/.test(v)) {
+                      setEditingYahtzee({...editingYahtzee, value: v});
+                    }
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && saveEditYahtzee()} />
+                <div className="modal-buttons">
+                  <button className="btn btn-cancel" onClick={() => setEditingYahtzee(null)}>Cancel</button>
+                  <button className="btn accent-amber text-white" onClick={saveEditYahtzee}>Save</button>
+                </div>
+              </div>
+            </div>
+          )}
           {editingCribbage && <EditCribbageModal />}
           {showHouseRulesPopup && <HouseRulesPopup />}
           {editingPitch && <EditPitchModal />}
-          {editingRoundScore && <RoundScoreModal />}
+          {editingRoundScore && (
+            <div className="modal-overlay" onClick={(e) => e.target.className === 'modal-overlay' && setEditingRoundScore(null)}>
+              <div className="modal" onClick={(e) => e.stopPropagation()}>
+                <div className="modal-title">Enter Score</div>
+                <div className="modal-text">{players.find(p => p.id === editingRoundScore.playerId)?.name}</div>
+                <input type="text" inputMode="numeric" className="input text-center mb-4" style={{fontSize: '28px', padding: '16px'}}
+                  autoFocus
+                  value={editingRoundScore.value}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    if (v === '' || v === '-' || /^-?\d*$/.test(v)) {
+                      setEditingRoundScore({...editingRoundScore, value: v});
+                    }
+                  }}
+                  onKeyDown={(e) => e.key === 'Enter' && saveRoundScore()} />
+                <div className="modal-buttons">
+                  <button className="btn btn-cancel" onClick={() => setEditingRoundScore(null)}>Cancel</button>
+                  <button className={`btn accent-${game?.color || 'amber'} text-white`} onClick={saveRoundScore}>OK</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       );
     }
